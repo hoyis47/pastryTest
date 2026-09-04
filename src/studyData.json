@@ -1,14 +1,14 @@
 [
     {
       "id": 1,
-      "category": "24페이지",
-      "title": "젤리 롤 케이크",
+      "category": "88페이지",
+      "title": "쇼트브레드 쿠키",
       "spec": {
-        "mixingMethod": "공립법",
-        "doughTemp": "23℃",
-        "specificGravity": "0.45 ± 0.05",
-        "ovenTemp": "175℃ / 155℃",
-        "bakingTime": "18 ~ 20분"
+        "mixingMethod": "크림법",
+        "doughTemp": "20℃",
+        "specificGravity": "-",
+        "ovenTemp": "190℃ / 130℃",
+        "bakingTime": "10 ~ 15분"
       },
       "videos": [
         "https://www.youtube.com/watch?v=예시링크1",

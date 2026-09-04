@@ -4,4 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: '0.0.0.0', // 모든 네트워크 인터페이스에서 접근 허용
+    port: 5173,      // 포트 번호 고정 (선택 사항)
+  },
 })
