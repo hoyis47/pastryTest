@@ -8,12 +8,6 @@ function App() {
 
   const currentItem = studyList[currentIndex] || studyList[0];
 
-  // 품목 이동 함수 (이동 시 블러 열람 상태 자동 초기화)
-  const changeItem = (newIndex) => {
-    setCurrentIndex(newIndex);
-    setHiddenState({});
-  };
-
   const toggleWordHidden = (toggleKey, uniqueWordKey) => {
     setHiddenState(prev => ({
       ...prev,
@@ -48,8 +42,68 @@ function App() {
     return text;
   };
 
-  const renderPlainText = (textData) => {
-    return typeof textData === 'string' ? textData : textData.text;
+  const renderBlurredText = (textData, isHiddenMode, toggleKey, itemHiddenState, onWordToggle) => {
+    const text = typeof textData === 'string' ? textData : textData.text;
+    const hiddenWords = typeof textData === 'string' ? [] : (textData.hidden || []);
+
+    if (!isHiddenMode || hiddenWords.length === 0) {
+      return <span>{text}</span>;
+    }
+
+    const escapedWords = hiddenWords.map(w => w.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+    if (escapedWords.length === 0) return <span>{text}</span>;
+
+    const regex = new RegExp(`(${escapedWords.join('|')})`, 'g');
+    const parts = text.split(regex);
+    const wordOccurrenceCount = {};
+
+    return (
+      <span>
+        {parts.map((part, i) => {
+          const wordIdx = hiddenWords.indexOf(part);
+          const isTargetWord = wordIdx !== -1;
+
+          if (isTargetWord) {
+            if (wordOccurrenceCount[part] === undefined) {
+              wordOccurrenceCount[part] = 0;
+            } else {
+              wordOccurrenceCount[part] += 1;
+            }
+            const occurrenceIdx = wordOccurrenceCount[part];
+            const uniqueWordKey = `${wordIdx}_${occurrenceIdx}`;
+            const isRevealed = !!(itemHiddenState[toggleKey] && itemHiddenState[toggleKey][uniqueWordKey]);
+
+            return (
+              <span
+                key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWordToggle(toggleKey, uniqueWordKey);
+                }}
+                style={{
+                  backgroundColor: isRevealed ? '#dcfce7' : 'transparent',
+                  color: isRevealed ? '#15803d' : 'transparent',
+                  textDecoration: isRevealed ? 'underline' : 'none',
+                  textUnderlineOffset: isRevealed ? '3px' : 'unset',
+                  textShadow: isRevealed ? 'none' : '0 0 8px rgba(0,0,0,0.4)',
+                  cursor: 'pointer',
+                  padding: '2px 5px',
+                  borderRadius: '4px',
+                  userSelect: 'none',
+                  display: 'inline-block',
+                  margin: '0 2px',
+                  transition: 'all 0.2s'
+                }}
+                title={isRevealed ? '클릭해서 다시 숨기기' : '클릭해서 정답 보기'}
+              >
+                {part}
+              </span>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
   };
 
   const formattedGravity = formatSpecificGravity(currentItem?.spec?.specificGravity);
@@ -62,7 +116,7 @@ function App() {
         <div>
           <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '22px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
-            {mode === 'study' ? '📖 전체 내용을 확인하며 학습합니다.' : '🎯 블러 처리된 카드를 터치하여 정답을 확인하며 복습합니다.'}
+            {mode === 'study' ? '📖 전체 내용을 확인하며 학습합니다.' : '🎯 터치해서 가려진 내용을 맞추며 복습합니다.'}
           </p>
         </div>
 
@@ -76,17 +130,14 @@ function App() {
               backgroundColor: mode === 'study' ? '#f0fdf4' : '#fff', 
               color: mode === 'study' ? '#166534' : '#6b7280', 
               fontWeight: 'bold', 
-              cursor: 'pointer', 
+              cursor: 'pointer',
               fontSize: '13px'
             }}
           >
             📖 공부노트
           </button>
           <button 
-            onClick={() => {
-              setMode('test');
-              setHiddenState({});
-            }}
+            onClick={() => setMode('test')}
             style={{ 
               padding: '8px 14px', 
               borderRadius: '8px', 
@@ -94,7 +145,7 @@ function App() {
               backgroundColor: mode === 'test' ? '#f0fdf4' : '#fff', 
               color: mode === 'test' ? '#166534' : '#6b7280', 
               fontWeight: 'bold', 
-              cursor: 'pointer', 
+              cursor: 'pointer',
               fontSize: '13px'
             }}
           >
@@ -106,7 +157,7 @@ function App() {
       {/* 2. 품목 이동 네비게이션 바 */}
       <div style={{ backgroundColor: '#fff', border: '1px solid #f3f4f6', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
         <button
-          onClick={() => changeItem(currentIndex === 0 ? studyList.length - 1 : currentIndex - 1)}
+          onClick={() => setCurrentIndex(prev => (prev === 0 ? studyList.length - 1 : prev - 1))}
           style={{
             padding: '8px 12px',
             borderRadius: '6px',
@@ -123,7 +174,7 @@ function App() {
 
         <select
           value={currentIndex}
-          onChange={(e) => changeItem(Number(e.target.value))}
+          onChange={(e) => setCurrentIndex(Number(e.target.value))}
           style={{
             padding: '8px 12px',
             borderRadius: '6px',
@@ -146,7 +197,7 @@ function App() {
         </select>
 
         <button
-          onClick={() => changeItem(currentIndex === studyList.length - 1 ? 0 : currentIndex + 1)}
+          onClick={() => setCurrentIndex(prev => (prev === studyList.length - 1 ? 0 : prev + 1))}
           style={{
             padding: '8px 12px',
             borderRadius: '6px',
@@ -165,17 +216,11 @@ function App() {
       {/* 3. 선택된 품목 정보 카드 */}
       {currentItem && (() => {
         const item = currentItem;
-        const hasNote = Boolean(item?.spec?.note && item.spec.note.trim() !== '');
+        const itemHidden = hiddenState;
 
-        const getSpecCardStyle = (isRevealed, isHighlight = false) => ({
-          backgroundColor: isRevealed 
-            ? (isHighlight ? '#fffbeb' : '#f0fdf4') 
-            : '#fafafa',
-          border: `1px solid ${
-            isRevealed 
-              ? (isHighlight ? '#fde68a' : '#bbf7d0') 
-              : '#f3f4f6'
-          }`,
+        const getSpecCardStyle = (isRevealed) => ({
+          backgroundColor: isRevealed ? '#f0fdf4' : '#fafafa',
+          border: `1px solid ${isRevealed ? '#bbf7d0' : '#f3f4f6'}`,
           padding: '12px',
           borderRadius: '8px',
           cursor: 'pointer',
@@ -184,11 +229,9 @@ function App() {
           transition: 'all 0.2s'
         });
 
-        const getSpecTextStyle = (isRevealed, isHighlight = false) => ({
+        const getSpecTextStyle = (isRevealed) => ({
           fontSize: '16px',
-          color: isRevealed 
-            ? (isHighlight ? '#b45309' : '#15803d') 
-            : '#374151',
+          color: isRevealed ? '#15803d' : '#374151',
           textDecoration: 'none',
           fontWeight: 'bold',
           filter: isRevealed ? 'none' : 'blur(5px)',
@@ -200,28 +243,28 @@ function App() {
           <div 
             key={item.id} 
             style={{ 
-              backgroundColor: '#fff', 
+              backgroundColor: '#fff',
               border: '1px solid #f3f4f6', 
               borderRadius: '16px', 
               padding: '16px', 
-              marginBottom: '20px', 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)' 
+              marginBottom: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
             }}
           >
-            {/* 품목명 헤더 */}
+            {/* 품목명 헤더 (페이지 뱃지 태그 제거 및 깔끔한 출력) */}
             <div style={{ 
               backgroundColor: '#f0fdf4', 
               border: '1px solid #bbf7d0', 
               borderRadius: '12px', 
               padding: '12px 16px', 
-              marginBottom: '16px' 
+              marginBottom: '16px'
             }}>
               <h2 style={{ fontSize: '19px', margin: 0, color: '#0f766e', fontWeight: 'bold' }}>
                 {item.title}
               </h2>
             </div>
 
-            {/* 공부노트 모드 레이아웃 (정답 상시 표시) */}
+            {/* 공부노트 모드 레이아웃 */}
             {mode === 'study' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '15px' }}>
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0 }}>
@@ -256,31 +299,19 @@ function App() {
                     {item.spec.bakingTime || '레시피 참조'}
                   </div>
                 </div>
-
-                {/* 주의사항 카드 */}
-                {hasNote && (
-                  <div style={{ gridColumn: 'span 2', backgroundColor: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fef3c7', minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 'bold' }}>⚡ 주의사항</div>
-                    <div style={{ fontSize: '15px', color: '#92400e', fontWeight: 'bold', marginTop: '4px', wordBreak: 'keep-all' }}>
-                      {item.spec.note}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* 테스트노트 모드 레이아웃 (블러 처리 & 터치 토글) */}
+            {/* 테스트노트 모드 레이아웃 */}
             {mode === 'test' && (() => {
               const mixRevealed = !!(hiddenState[`spec_${item.id}_mixing`]?.['0_0']);
               const tempRevealed = !!(hiddenState[`spec_${item.id}_temp`]?.['0_0']);
               const gravityRevealed = !!(hiddenState[`spec_${item.id}_gravity`]?.['0_0']);
               const ovenRevealed = !!(hiddenState[`spec_${item.id}_oven`]?.['0_0']);
               const bakingRevealed = !!(hiddenState[`spec_${item.id}_baking`]?.['0_0']);
-              const noteRevealed = !!(hiddenState[`spec_${item.id}_note`]?.['0_0']);
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                  {/* 반죽 방법 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '15px' }}>
                   <div 
                     onClick={() => toggleWordHidden(`spec_${item.id}_mixing`, '0_0')}
                     style={getSpecCardStyle(mixRevealed)}
@@ -294,7 +325,6 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 반죽 온도 */}
                   <div 
                     onClick={() => toggleWordHidden(`spec_${item.id}_temp`, '0_0')}
                     style={getSpecCardStyle(tempRevealed)}
@@ -308,7 +338,6 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 비중 */}
                   {formattedGravity && (
                     <div 
                       onClick={() => toggleWordHidden(`spec_${item.id}_gravity`, '0_0')}
@@ -324,7 +353,6 @@ function App() {
                     </div>
                   )}
 
-                  {/* 오븐 온도 */}
                   <div 
                     onClick={() => toggleWordHidden(`spec_${item.id}_oven`, '0_0')}
                     style={getSpecCardStyle(ovenRevealed)}
@@ -338,7 +366,6 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 굽기 시간 */}
                   <div 
                     onClick={() => toggleWordHidden(`spec_${item.id}_baking`, '0_0')}
                     style={getSpecCardStyle(bakingRevealed)}
@@ -351,108 +378,87 @@ function App() {
                       {item.spec.bakingTime || '레시피 참조'}
                     </div>
                   </div>
-
-                  {/* 주의사항 블러 카드 */}
-                  {hasNote && (
-                    <div 
-                      onClick={() => toggleWordHidden(`spec_${item.id}_note`, '0_0')}
-                      style={{ gridColumn: 'span 2', ...getSpecCardStyle(noteRevealed, true) }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 'bold' }}>⚡ 주의사항</span>
-                        <span style={{ fontSize: '12px' }}>{noteRevealed ? '👁️' : '🔒'}</span>
-                      </div>
-                      <div style={getSpecTextStyle(noteRevealed, true)}>
-                        {item.spec.note}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })()}
 
-            {/* 공부노트 모드에서만 동영상과 정리노트 노출 */}
-            {mode === 'study' && (
-              <>
-                {/* 1. 동영상 영역 */}
-                {item.videos && item.videos.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', marginBottom: '20px' }}>
-                    {item.videos.map((v, vIdx) => {
-                      const videoUrl = typeof v === 'string' ? v : v.url;
-                      const videoTitle = typeof v === 'string' ? `참고 영상 ${vIdx + 1}` : (v.title || `참고 영상 ${vIdx + 1}`);
+            {/* 합격포인트 박스 */}
+            {item.keyPoint && item.keyPoint.length > 0 && (
+              <div style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', marginBottom: '20px', color: '#854d0e' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>🔥 합격포인트</div>
+                <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
+                  {item.keyPoint.map((kp, kpIdx) => {
+                    const toggleKey = `kp_${item.id}_${kpIdx}`;
+                    return (
+                      <li key={kpIdx} style={{ marginBottom: '4px' }}>
+                        {renderBlurredText(kp, mode === 'test', toggleKey, itemHidden, toggleWordHidden)}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
+            {/* 공정 순서 목록 */}
+            <h3 style={{ fontSize: '15px', color: '#374151', marginBottom: '12px', borderBottom: '1px solid #f3f4f6', paddingBottom: '6px' }}>📋 단계별 공정 및 주의사항</h3>
+            
+            {item.process.map((p, idx) => (
+              <div key={idx} style={{ marginBottom: '14px', backgroundColor: '#fafafa', padding: '12px', borderRadius: '10px', border: '1px solid #f3f4f6' }}>
+                <h4 style={{ fontSize: '14px', color: '#0f766e', margin: '0 0 6px 0' }}>
+                  {p.step ? `${p.step}. ` : ''}{p.title} {p.specTemp && <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'normal' }}>({p.specTemp})</span>}
+                </h4>
+                
+                {p.details && p.details.length > 0 && (
+                  <ul style={{ paddingLeft: '18px', margin: '0 0 6px 0', color: '#4b5563' }}>
+                    {p.details.map((d, dIdx) => {
+                      const toggleKey = `process_${item.id}_${idx}_detail_${dIdx}`;
                       return (
-                        <div 
-                          key={vIdx} 
-                          style={{ 
-                            backgroundColor: '#fdfbf7', 
-                            border: '1px solid #f1ece4', 
-                            borderRadius: '12px', 
-                            padding: '12px 14px' 
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '14px' }}>🎬</span>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#44403c', wordBreak: 'keep-all' }}>
-                              {videoTitle}
-                            </span>
-                          </div>
-
-                          <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
-                            <iframe 
-                              src={getEmbedUrl(videoUrl)} 
-                              title={videoTitle}
-                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                            />
-                          </div>
-                        </div>
+                        <li key={dIdx} style={{ marginBottom: '3px', lineHeight: '1.4', fontSize: '13px' }}>
+                          {renderBlurredText(d, mode === 'test', toggleKey, itemHidden, toggleWordHidden)}
+                        </li>
                       );
                     })}
-
-                    {/* 마지막 영상 아래 일부공개 안내 문구 */}
-                    <div style={{ 
-                      fontSize: '11.5px', 
-                      color: '#9ca3af', 
-                      textAlign: 'center', 
-                      marginTop: '-4px', 
-                      lineHeight: '1.4', 
-                      wordBreak: 'keep-all',
-                      padding: '0 8px'
-                    }}>
-                      ※ 본 실습 영상은 학습자 전용 일부공개 영상이므로, 외부 링크 유출 없이 이곳에서만 시청해 주시기 바랍니다.
-                    </div>
-                  </div>
+                  </ul>
                 )}
 
-                {/* 2. 정리노트 박스 (1., 2. 형태 항목은 자동 한 칸 들여쓰기) */}
-                {item.keyPoint && item.keyPoint.length > 0 && (
-                  <div style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', marginTop: item.videos && item.videos.length > 0 ? '0' : '20px', color: '#854d0e' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>📝 정리노트</div>
-                    <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
-                      {item.keyPoint.map((kp, kpIdx) => {
-                        const rawText = renderPlainText(kp);
-                        // 숫자 리스트(1., 2.), 괄호 숫자 (1), 원문자 ① 등 감지
-                        const isNumberedList = /^\s*(\d+\.|\(\d+\)|[①-⑩])/.test(rawText);
-
+                {p.tips && p.tips.length > 0 && (
+                  <div style={{ backgroundColor: '#fff1f2', borderLeft: '3px solid #fecdd3', padding: '8px 10px', borderRadius: '4px', marginTop: '6px' }}>
+                    <div style={{ fontSize: '11px', color: '#9f1239', fontWeight: 'bold', marginBottom: '2px' }}>⚠️ 주의 및 합격 팁</div>
+                    <ul style={{ paddingLeft: '14px', margin: 0, color: '#be123c', fontSize: '12px' }}>
+                      {p.tips.map((t, tIdx) => {
+                        const toggleKey = `process_${item.id}_${idx}_tip_${tIdx}`;
                         return (
-                          <li 
-                            key={kpIdx} 
-                            style={{ 
-                              marginBottom: '4px',
-                              marginLeft: isNumberedList ? '14px' : '0px',
-                              listStyleType: isNumberedList ? 'none' : 'disc'
-                            }}
-                          >
-                            {rawText}
+                          <li key={tIdx} style={{ marginBottom: '2px', lineHeight: '1.3' }}>
+                            {renderBlurredText(t, mode === 'test', toggleKey, itemHidden, toggleWordHidden)}
                           </li>
                         );
                       })}
                     </ul>
                   </div>
                 )}
-              </>
+              </div>
+            ))}
+
+            {/* 실습 영상 */}
+            {mode === 'study' && item.videos && item.videos.length > 0 && (
+              <div style={{ backgroundColor: '#fdfbf7', border: '1px solid #f3edf6', borderRadius: '12px', padding: '14px', marginTop: '20px' }}>
+                <h3 style={{ fontSize: '14px', color: '#78350f', margin: '0 0 10px 0' }}>
+                  🎥 실습 및 공정 영상 ({item.videos.length}개)
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {item.videos.map((videoUrl, vIdx) => (
+                    <div key={vIdx} style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+                      <iframe 
+                        src={getEmbedUrl(videoUrl)} 
+                        title={`YouTube video ${vIdx + 1}`}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowFullScreen
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
           </div>
