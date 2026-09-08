@@ -62,7 +62,7 @@ function App() {
         <div>
           <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '22px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
-            {mode === 'study' ? '📖 전체 내용을 확인하며 학습합니다.' : '🎯 블러 처리된 카드를 터치하여 정답을 확인하며 복습합니다.'}
+            우리 모두 합격까지 힘내봐요! 🍀
           </p>
         </div>
 
@@ -433,7 +433,6 @@ function App() {
                     <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
                       {item.keyPoint.map((kp, kpIdx) => {
                         const rawText = renderPlainText(kp);
-                        // 숫자 리스트(1., 2.), 괄호 숫자 (1), 원문자 ① 등 감지
                         const isNumberedList = /^\s*(\d+\.|\(\d+\)|[①-⑩])/.test(rawText);
 
                         return (
