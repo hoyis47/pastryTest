@@ -103,29 +103,53 @@ function App() {
         </div>
       </div>
 
-      {/* 2. 품목 이동 네비게이션 바 */}
-      <div style={{ backgroundColor: '#fff', border: '1px solid #f3f4f6', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-        <button
-          onClick={() => changeItem(currentIndex === 0 ? studyList.length - 1 : currentIndex - 1)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: '1px solid #e5e7eb',
-            backgroundColor: '#fafafa',
-            color: '#374151',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 'bold'
-          }}
-        >
-          ◀ 이전
-        </button>
+      {/* 2. 품목 이동 네비게이션 바 (상단 버튼 나란히 + 하단 드롭다운) */}
+      <div style={{ backgroundColor: '#fff', border: '1px solid #f3f4f6', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        
+        {/* 상단: 이전 / 다음 버튼 나란히 배치 */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+          <button
+            onClick={() => changeItem(currentIndex === 0 ? studyList.length - 1 : currentIndex - 1)}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e5e7eb',
+              backgroundColor: '#fafafa',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 'bold'
+            }}
+          >
+            ◀ 이전
+          </button>
 
+          <button
+            onClick={() => changeItem(currentIndex === studyList.length - 1 ? 0 : currentIndex + 1)}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #e5e7eb',
+              backgroundColor: '#fafafa',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 'bold'
+            }}
+          >
+            다음 ▶
+          </button>
+        </div>
+
+        {/* 하단: 드롭다운 선택 */}
         <select
           value={currentIndex}
           onChange={(e) => changeItem(Number(e.target.value))}
           style={{
-            padding: '8px 12px',
+            width: '100%',
+            padding: '9px 12px',
             borderRadius: '6px',
             border: '1px solid #e5e7eb',
             backgroundColor: '#fff',
@@ -133,9 +157,8 @@ function App() {
             fontWeight: 'bold',
             color: '#1f2937',
             cursor: 'pointer',
-            maxWidth: '260px',
-            flexGrow: 1,
-            textAlign: 'center'
+            textAlign: 'center',
+            boxSizing: 'border-box'
           }}
         >
           {studyList.map((item, idx) => (
@@ -144,22 +167,6 @@ function App() {
             </option>
           ))}
         </select>
-
-        <button
-          onClick={() => changeItem(currentIndex === studyList.length - 1 ? 0 : currentIndex + 1)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: '1px solid #e5e7eb',
-            backgroundColor: '#fafafa',
-            color: '#374151',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 'bold'
-          }}
-        >
-          다음 ▶
-        </button>
       </div>
 
       {/* 3. 선택된 품목 정보 카드 */}

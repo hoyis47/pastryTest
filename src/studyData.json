@@ -128,5 +128,26 @@
           "hidden": []
         }
       ]
+    },
+    {
+      "id": 3,
+      "category": "28페이지",
+      "title": "버터스펀지 케이크(공립법)",
+      "spec": {
+        "mixingMethod": "공립법",
+        "doughTemp": "25℃",
+        "specificGravity": "0.50 ± 0.05",
+        "ovenTemp": "180℃ / 160℃",
+        "bakingTime": "20분"
+      },
+      "videos": [
+        {
+          "title": "버터스펀지 케이크(공립법)",
+          "url": ""
+        }
+      ],
+      "keyPoint": [
+        
+      ]
     }
   ]
