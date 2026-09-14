@@ -375,7 +375,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 비중 (테스트모드: 열렸을 때 공부노트와 동일하게 표시) */}
+                  {/* 비중 (테스트모드: 열렸을 때 1번 라벤더 컬러 적용 & 핵심 앞 숫자만 노출) */}
                   {gravityData && (
                     <div 
                       onClick={() => toggleWordHidden(`spec_${item.id}_gravity`, '0_0')}
@@ -386,14 +386,7 @@ function App() {
                         <span style={{ fontSize: '12px' }}>{gravityRevealed ? '👁️' : '🔒'}</span>
                       </div>
                       <div style={getSpecTextStyle(gravityRevealed, 'gravity')}>
-                        <span style={{ color: gravityRevealed ? '#5b21b6' : 'inherit', fontWeight: 'bold', fontSize: '18px' }}>
-                          {gravityData.coreVal}
-                        </span>
-                        {gravityData.restText && (
-                          <span style={{ color: gravityRevealed ? '#6b7280' : 'inherit', fontWeight: 'normal', fontSize: '14px' }}>
-                            {gravityData.restText}
-                          </span>
-                        )}
+                        {gravityData.coreVal}
                       </div>
                     </div>
                   )}
