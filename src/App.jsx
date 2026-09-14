@@ -46,7 +46,7 @@ function App() {
       const maxVal = (center + range).toFixed(2);
       return {
         coreVal: match[1], // 외워야 할 핵심 앞 숫자
-        restText: ` ± ${match[2]} (${minVal} ~ ${maxVal})` // 볼드 없는 참고용 일반체
+        restText: ` ± ${match[2]} (${minVal} ~ ${maxVal})` // 참고용 오차 범위
       };
     }
     return {
@@ -62,7 +62,17 @@ function App() {
   const gravityData = parseSpecificGravity(currentItem?.spec?.specificGravity);
 
   return (
-    <div style={{ padding: '20px 16px', fontFamily: 'sans-serif', maxWidth: '850px', margin: '0 auto', backgroundColor: '#fcfdfa', minHeight: '100vh', textAlign: 'left', boxSizing: 'border-box' }}>
+    <div style={{ 
+      padding: '20px 16px', 
+      fontFamily: 'sans-serif', 
+      maxWidth: '850px', 
+      width: '100%',
+      margin: '0 auto', 
+      backgroundColor: '#fcfdfa', 
+      minHeight: '100vh', 
+      textAlign: 'left', 
+      boxSizing: 'border-box' 
+    }}>
       
       {/* 1. 상단 헤더 & 모드 전환 버튼 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px', borderBottom: '1px solid #e5e7eb', paddingBottom: '14px' }}>
@@ -115,65 +125,41 @@ function App() {
         const item = currentItem;
         const hasNote = Boolean(item?.spec?.note && item.spec.note.trim() !== '');
 
-        // 카드 스타일 분기: 일반(소프트블루), 주의사항(오렌지/앰버), 비중(1번 라벤더/바이올렛)
+        // 카드 박스 스타일
         const getSpecCardStyle = (isRevealed, cardType = 'default') => {
+          let bg = '#f0f9ff';
+          let border = '#bae6fd';
+
           if (!isRevealed) {
-            return {
-              backgroundColor: '#fafafa',
-              border: '1px solid #f3f4f6',
-              padding: '12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minWidth: 0,
-              transition: 'all 0.2s'
-            };
+            bg = '#fafafa';
+            border = '#f3f4f6';
+          } else if (cardType === 'note') {
+            bg = '#fff7ed';
+            border = '#fed7aa';
+          } else if (cardType === 'gravity') {
+            bg = '#f5f3ff';
+            border = '#ddd6fe';
           }
 
-          if (cardType === 'note') {
-            return {
-              backgroundColor: '#fff7ed',
-              border: '1px solid #fed7aa',
-              padding: '12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minWidth: 0,
-              transition: 'all 0.2s'
-            };
-          }
-
-          if (cardType === 'gravity') {
-            return {
-              backgroundColor: '#f5f3ff',
-              border: '1px solid #ddd6fe',
-              padding: '12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minWidth: 0,
-              transition: 'all 0.2s'
-            };
-          }
-
-          // 기본 스펙 카드 (소프트 블루)
           return {
-            backgroundColor: '#f0f9ff',
-            border: '1px solid #bae6fd',
+            backgroundColor: bg,
+            border: `1px solid ${border}`,
             padding: '12px',
             borderRadius: '8px',
             cursor: 'pointer',
             userSelect: 'none',
             minWidth: 0,
+            width: '100%',
+            boxSizing: 'border-box',
             transition: 'all 0.2s'
           };
         };
 
-        // 텍스트 스타일 분기
+        // 텍스트 스타일 (폭 확장 방지 및 줄바꿈 처리)
         const getSpecTextStyle = (isRevealed, cardType = 'default') => {
-          let activeColor = '#0369a1'; // 기본 블루
-          if (cardType === 'note') activeColor = '#c2410c'; // 주의사항 앰버
-          if (cardType === 'gravity') activeColor = '#6d28d9'; // 비중 1번 라벤더/딥바이올렛
+          let activeColor = '#0369a1';
+          if (cardType === 'note') activeColor = '#c2410c';
+          if (cardType === 'gravity') activeColor = '#6d28d9';
 
           return {
             fontSize: '16px',
@@ -182,7 +168,8 @@ function App() {
             fontWeight: 'bold',
             filter: isRevealed ? 'none' : 'blur(5px)',
             opacity: isRevealed ? 1 : 0.3,
-            wordBreak: 'keep-all'
+            wordBreak: 'break-word',
+            overflowWrap: 'anywhere'
           };
         };
 
@@ -195,7 +182,9 @@ function App() {
               borderRadius: '16px', 
               padding: '14px', 
               marginBottom: '20px', 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)' 
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
             {/* 슬림형 네비게이션 헤더 */}
@@ -282,22 +271,33 @@ function App() {
 
             {/* 공부노트 모드 레이아웃 */}
             {mode === 'study' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '15px' }}>
-                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0 }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', 
+                gap: '10px', 
+                marginBottom: '15px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 방법</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'keep-all' }}>{item.spec.mixingMethod}</div>
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {item.spec.mixingMethod}
+                  </div>
                 </div>
 
-                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0 }}>
+                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 온도</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px' }}>{item.spec.doughTemp}</div>
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {item.spec.doughTemp}
+                  </div>
                 </div>
 
-                {/* 공부노트 비중: 1번 산뜻한 소프트 라벤더 박스 */}
+                {/* 공부노트 비중 카드 */}
                 {gravityData && (
-                  <div style={{ gridColumn: 'span 2', backgroundColor: '#f5f3ff', padding: '12px', borderRadius: '8px', border: '1px solid #ddd6fe', minWidth: 0 }}>
+                  <div style={{ gridColumn: 'span 2', backgroundColor: '#f5f3ff', padding: '12px', borderRadius: '8px', border: '1px solid #ddd6fe', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{ fontSize: '12px', color: '#6d28d9', fontWeight: 'bold' }}>⚖️ 비중 (기준)</div>
-                    <div style={{ fontSize: '16px', marginTop: '4px', wordBreak: 'keep-all' }}>
+                    <div style={{ fontSize: '16px', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                       <span style={{ color: '#5b21b6', fontWeight: 'bold', fontSize: '18px' }}>
                         {gravityData.coreVal}
                       </span>
@@ -310,25 +310,25 @@ function App() {
                   </div>
                 )}
 
-                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0 }}>
+                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>오븐 온도</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'keep-all' }}>
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {item.spec.ovenTemp || '레시피 참조'}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0 }}>
+                <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>굽기 시간</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'keep-all' }}>
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {item.spec.bakingTime || '레시피 참조'}
                   </div>
                 </div>
 
                 {/* 주의사항 카드 */}
                 {hasNote && (
-                  <div style={{ gridColumn: 'span 2', backgroundColor: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fef3c7', minWidth: 0 }}>
+                  <div style={{ gridColumn: 'span 2', backgroundColor: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fef3c7', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 'bold' }}>⚡ 주의사항</div>
-                    <div style={{ fontSize: '15px', color: '#92400e', fontWeight: 'bold', marginTop: '4px', wordBreak: 'keep-all' }}>
+                    <div style={{ fontSize: '15px', color: '#92400e', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                       {item.spec.note}
                     </div>
                   </div>
@@ -346,7 +346,13 @@ function App() {
               const noteRevealed = !!(hiddenState[`spec_${item.id}_note`]?.['0_0']);
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', 
+                  gap: '10px',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}>
                   {/* 반죽 방법 */}
                   <div 
                     onClick={() => toggleWordHidden(`spec_${item.id}_mixing`, '0_0')}
@@ -375,7 +381,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 비중 (테스트모드: 열렸을 때 공부노트와 동일하게 표시) */}
+                  {/* 비중 */}
                   {gravityData && (
                     <div 
                       onClick={() => toggleWordHidden(`spec_${item.id}_gravity`, '0_0')}
@@ -426,7 +432,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 주의사항 블러 카드 (오렌지/앰버 톤) */}
+                  {/* 주의사항 블러 카드 */}
                   {hasNote && (
                     <div 
                       onClick={() => toggleWordHidden(`spec_${item.id}_note`, '0_0')}
@@ -445,12 +451,12 @@ function App() {
               );
             })()}
 
-            {/* 공부노트 모드에서만 동영상과 정리노트 노출 */}
+            {/* 공부노트 모드 동영상 & 정리노트 */}
             {mode === 'study' && (
               <>
                 {/* 1. 동영상 영역 */}
                 {item.videos && item.videos.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
                     {item.videos.map((v, vIdx) => {
                       const videoUrl = typeof v === 'string' ? v : v.url;
                       const videoTitle = typeof v === 'string' ? `참고 영상 ${vIdx + 1}` : (v.title || `참고 영상 ${vIdx + 1}`);
@@ -462,12 +468,13 @@ function App() {
                             backgroundColor: '#fdfbf7', 
                             border: '1px solid #f1ece4', 
                             borderRadius: '12px', 
-                            padding: '12px 14px' 
+                            padding: '12px 14px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                             <span style={{ fontSize: '14px' }}>🎬</span>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#44403c', wordBreak: 'keep-all' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#44403c', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                               {videoTitle}
                             </span>
                           </div>
@@ -491,7 +498,8 @@ function App() {
                       textAlign: 'center', 
                       marginTop: '-4px', 
                       lineHeight: '1.4', 
-                      wordBreak: 'keep-all',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
                       padding: '0 8px'
                     }}>
                       ※ 본 실습 영상은 학습자 전용 일부공개 영상이므로, 외부 링크 유출 없이 이곳에서만 시청해 주시기 바랍니다.
@@ -501,7 +509,16 @@ function App() {
 
                 {/* 2. 정리노트 박스 */}
                 {item.keyPoint && item.keyPoint.length > 0 && (
-                  <div style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', marginTop: item.videos && item.videos.length > 0 ? '0' : '20px', color: '#854d0e' }}>
+                  <div style={{ 
+                    backgroundColor: '#fefce8', 
+                    border: '1px solid #fef08a', 
+                    borderRadius: '10px', 
+                    padding: '12px 14px', 
+                    marginTop: item.videos && item.videos.length > 0 ? '0' : '20px', 
+                    color: '#854d0e',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}>
                     <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>📝 정리노트</div>
                     <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
                       {item.keyPoint.map((kp, kpIdx) => {
@@ -514,7 +531,9 @@ function App() {
                             style={{ 
                               marginBottom: '4px',
                               marginLeft: isNumberedList ? '14px' : '0px',
-                              listStyleType: isNumberedList ? 'none' : 'disc'
+                              listStyleType: isNumberedList ? 'none' : 'disc',
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere'
                             }}
                           >
                             {rawText}
