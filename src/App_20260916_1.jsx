@@ -1,37 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import studyList from './studyData.json';
 
 function App() {
   const [mode, setMode] = useState('study');
   const [hiddenState, setHiddenState] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  // 🔒 동영상 열람 권한 상태 관리
-  const [hasVideoAccess, setHasVideoAccess] = useState(false);
-
-  // 본인만 아는 비밀 접근 키
-  const SECRET_ACCESS_KEY = 'cookie2026';
-
-  useEffect(() => {
-    // 1. 이미 인증받은 브라우저(캐시/스토리지)인지 확인
-    const isVip = localStorage.getItem('hasVideoAccess') === 'true';
-    if (isVip) {
-      setHasVideoAccess(true);
-      return;
-    }
-
-    // 2. URL 파라미터(?access=...) 체크
-    const params = new URLSearchParams(window.location.search);
-    const accessKey = params.get('access');
-
-    if (accessKey === SECRET_ACCESS_KEY) {
-      localStorage.setItem('hasVideoAccess', 'true');
-      setHasVideoAccess(true);
-
-      // 주소창에서 파라미터 흔적 제거 (?access=cookie2026 숨기기)
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
 
   const currentItem = studyList[currentIndex] || studyList[0];
 
@@ -93,7 +66,7 @@ function App() {
       padding: '20px 16px', 
       fontFamily: 'sans-serif', 
       maxWidth: '850px', 
-      width: '100%', 
+      width: '100%',
       margin: '0 auto', 
       backgroundColor: '#fcfdfa', 
       minHeight: '100vh', 
@@ -218,7 +191,7 @@ function App() {
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              justifyContent: 'space-between', 
+              justifyContent: 'space-between',
               backgroundColor: '#f0fdf4', 
               border: '1px solid #bbf7d0', 
               borderRadius: '12px', 
@@ -481,8 +454,8 @@ function App() {
             {/* 공부노트 모드 동영상 & 정리노트 */}
             {mode === 'study' && (
               <>
-                {/* 1. 동영상 영역 (🔒 hasVideoAccess 권한이 있을 때만 렌더링) */}
-                {hasVideoAccess && item.videos && item.videos.length > 0 && (
+                {/* 1. 동영상 영역 */}
+                {item.videos && item.videos.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
                     {item.videos.map((v, vIdx) => {
                       const videoUrl = typeof v === 'string' ? v : v.url;
@@ -495,8 +468,8 @@ function App() {
                             backgroundColor: '#fdfbf7', 
                             border: '1px solid #f1ece4', 
                             borderRadius: '12px', 
-                            padding: '12px 14px', 
-                            boxSizing: 'border-box' 
+                            padding: '12px 14px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
@@ -525,9 +498,9 @@ function App() {
                       textAlign: 'center', 
                       marginTop: '-4px', 
                       lineHeight: '1.4', 
-                      wordBreak: 'break-word', 
-                      overflowWrap: 'anywhere', 
-                      padding: '0 8px' 
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
+                      padding: '0 8px'
                     }}>
                       ※ 본 실습 영상은 학습자 전용 일부공개 영상이므로, 외부 링크 유출 없이 이곳에서만 시청해 주시기 바랍니다.
                     </div>
@@ -541,11 +514,10 @@ function App() {
                     border: '1px solid #fef08a', 
                     borderRadius: '10px', 
                     padding: '12px 14px', 
-                    // 영상이 없거나 숨겨져 있으면 여백 20px, 영상이 있으면 0 유지
-                    marginTop: (hasVideoAccess && item.videos && item.videos.length > 0) ? '0' : '20px', 
-                    color: '#854d0e', 
-                    width: '100%', 
-                    boxSizing: 'border-box' 
+                    marginTop: item.videos && item.videos.length > 0 ? '0' : '20px', 
+                    color: '#854d0e',
+                    width: '100%',
+                    boxSizing: 'border-box'
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>📝 정리노트</div>
                     <ul style={{ paddingLeft: '18px', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
@@ -557,11 +529,11 @@ function App() {
                           <li 
                             key={kpIdx} 
                             style={{ 
-                              marginBottom: '4px', 
-                              marginLeft: isNumberedList ? '14px' : '0px', 
-                              listStyleType: isNumberedList ? 'none' : 'disc', 
-                              wordBreak: 'break-word', 
-                              overflowWrap: 'anywhere' 
+                              marginBottom: '4px',
+                              marginLeft: isNumberedList ? '14px' : '0px',
+                              listStyleType: isNumberedList ? 'none' : 'disc',
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere'
                             }}
                           >
                             {rawText}
