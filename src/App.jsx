@@ -2,12 +2,316 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import studyList from './studyData.js'; // ✨ .js 파일 import
 
 // ----------------------------------------------------
-// 🧭 [컴포넌트] 공정플로우 뷰 (테스트모드 기본 블러 + 터치 시 원형 글자 및 본문 해제)
+// 🎲 [컴포넌트] 테스트모드용 공정 순서 맞추기 뽑기통 게임
+// ----------------------------------------------------
+function StepFlowTestGame({ steps, itemId }) {
+  // 섞인 캡슐 풀 (아직 배치되지 않은 아이템들)
+  const [capsulePool, setCapsulePool] = useState([]);
+  // 사용자가 1, 2, 3... 슬롯에 배치한 결과 (배열 인덱스 = 순서)
+  const [placedSlots, setPlacedSlots] = useState([]);
+
+  // 품목 변경 시 캡슐 섞기 및 초기화
+  useEffect(() => {
+    resetGame();
+  }, [steps, itemId]);
+
+  const resetGame = () => {
+    // 원본 단계를 무작위로 섞음 (뽑기통 느낌의 미세 회전각 추가)
+    const shuffled = [...steps]
+      .map(item => ({ ...item, randomTilt: (Math.random() - 0.5) * 16 }))
+      .sort(() => Math.random() - 0.5);
+
+    setCapsulePool(shuffled);
+    setPlacedSlots(new Array(steps.length).fill(null));
+  };
+
+  // 캡슐을 슬롯에 배치
+  const placeCapsuleIntoSlot = (capsule, targetIndex) => {
+    const currentOccupant = placedSlots[targetIndex];
+    let newPool = capsulePool.filter(c => c.id !== capsule.id);
+    if (currentOccupant) {
+      newPool.push(currentOccupant);
+    }
+
+    const newPlaced = placedSlots.map((item, idx) => {
+      if (idx === targetIndex) return capsule;
+      if (item && item.id === capsule.id) return null;
+      return item;
+    });
+
+    setCapsulePool(newPool);
+    setPlacedSlots(newPlaced);
+  };
+
+  // 슬롯에 놓인 캡슐을 다시 뽑기통으로 반환
+  const returnToPool = (slotIndex) => {
+    const item = placedSlots[slotIndex];
+    if (!item) return;
+
+    setPlacedSlots(prev => prev.map((s, idx) => (idx === slotIndex ? null : s)));
+    setCapsulePool(prev => [...prev, item]);
+  };
+
+  // 가장 첫 번째 빈 슬롯 탐색
+  const findFirstEmptySlot = () => {
+    return placedSlots.findIndex(slot => slot === null);
+  };
+
+  // 캡슐 터치 시 첫 빈 슬롯으로 자동 이동
+  const handleCapsuleClick = (capsule) => {
+    const firstEmpty = findFirstEmptySlot();
+    if (firstEmpty !== -1) {
+      placeCapsuleIntoSlot(capsule, firstEmpty);
+    }
+  };
+
+  // 정답 판독
+  const isFilled = placedSlots.length > 0 && placedSlots.every(s => s !== null);
+  const isAllCorrect = isFilled && placedSlots.every((step, idx) => step && step.id === idx);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', boxSizing: 'border-box' }}>
+      
+      {/* 1. 상단: 순서 맞추기 배치 슬롯 (콤팩트한 여백 + 테두리 걸터앉기/원형 중앙 번호) */}
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '12px', border: '1.5px solid #bae6fd' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0369a1' }}>
+            🎯 순서대로 배치하세요 ({placedSlots.filter(Boolean).length} / {steps.length})
+          </div>
+          <button 
+            onClick={resetGame}
+            style={{ 
+              border: 'none', 
+              backgroundColor: '#e0f2fe', 
+              color: '#0369a1', 
+              padding: '4px 10px', 
+              borderRadius: '6px', 
+              fontSize: '11px', 
+              fontWeight: 'bold', 
+              cursor: 'pointer' 
+            }}
+          >
+            🔄 다시 섞기
+          </button>
+        </div>
+
+        {/* 한눈에 보이는 줄바꿈 트랙 (불필요한 세로 여백 최소화) */}
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '10px 8px', 
+          justifyContent: 'flex-start',
+          alignItems: 'center',
+          padding: '6px 2px 4px 2px'
+        }}>
+          {steps.map((_, idx) => {
+            const placed = placedSlots[idx];
+            const isCorrectSlot = placed && placed.id === idx;
+
+            return (
+              <div
+                key={idx}
+                onClick={() => placed && returnToPool(idx)}
+                style={{
+                  position: 'relative',
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '50%',
+                  border: placed 
+                    ? (isFilled ? (isCorrectSlot ? '2.5px solid #22c55e' : '2.5px solid #ef4444') : '2.5px solid #0284c7') 
+                    : '2px dashed #cbd5e1',
+                  backgroundColor: placed ? '#f0f9ff' : '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: placed ? 'pointer' : 'default',
+                  transition: 'all 0.2s ease',
+                  boxShadow: placed ? '0 2px 6px rgba(2, 132, 199, 0.2)' : 'none',
+                  boxSizing: 'border-box',
+                  padding: '2px',
+                  flexShrink: 0
+                }}
+                title={placed ? '터치하면 뽑기통으로 복귀합니다' : `${idx + 1}단계 슬롯`}
+              >
+                {/* 📌 1) 채워졌을 때: 원의 테두리 선 위에 딱 붙어 걸터앉는 슬림 라벨 */}
+                {placed && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: isFilled ? (isCorrectSlot ? '#22c55e' : '#ef4444') : '#0284c7',
+                    color: '#ffffff',
+                    fontSize: '9px',
+                    fontWeight: 'bold',
+                    padding: '0 5px',
+                    borderRadius: '8px',
+                    lineHeight: '13px',
+                    zIndex: 2,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {idx + 1}
+                  </span>
+                )}
+
+                {/* 📌 2) 내용 표시: 비어있을 때는 원 내부 중앙에 은은한 회색 숫자로 순서 표기 */}
+                {placed ? (
+                  <div style={{ textAlign: 'center', lineHeight: '1.2' }}>
+                    {placed.nameLines.map((line, lIdx) => (
+                      <div 
+                        key={lIdx} 
+                        style={{ 
+                          fontSize: placed.nameLines.length > 1 ? '10px' : '11px', 
+                          fontWeight: 'bold', 
+                          color: '#0369a1',
+                          maxWidth: '44px',
+                          wordBreak: 'break-all'
+                        }}
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ 
+                    fontSize: '16px', 
+                    color: '#94a3b8', 
+                    fontWeight: 'bold', 
+                    userSelect: 'none',
+                    opacity: 0.85
+                  }}>
+                    {idx + 1}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. 하단: 뽑기통 기계 (캡슐 컨테이너) */}
+      <div style={{
+        backgroundColor: '#f1f5f9',
+        border: '3px solid #cbd5e1',
+        borderRadius: '18px',
+        padding: '14px',
+        position: 'relative',
+        minHeight: '120px',
+        boxShadow: 'inset 0 4px 8px rgba(0, 0, 0, 0.04)',
+        boxSizing: 'border-box'
+      }}>
+        {/* ✨ 줄바꿈을 적용해 어설픈 강제 분할을 방지한 상단 헤더 */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>
+              🎰 캡슐 뽑기통
+            </span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>
+              (터치하여 슬롯에 넣으세요)
+            </span>
+          </div>
+
+          <span style={{ 
+            fontSize: '11px', 
+            color: '#0369a1', 
+            fontWeight: 'bold', 
+            backgroundColor: '#e0f2fe', 
+            padding: '3px 8px', 
+            borderRadius: '10px',
+            flexShrink: 0
+          }}>
+            남은 캡슐: {capsulePool.length}개
+          </span>
+        </div>
+
+        {/* 섞여 있는 원형 캡슐 목록 */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px'
+        }}>
+          {capsulePool.map((capsule) => (
+            <div
+              key={capsule.id}
+              onClick={() => handleCapsuleClick(capsule)}
+              style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%)',
+                border: '2px solid #38bdf8',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                userSelect: 'none',
+                boxShadow: '0 3px 8px rgba(14, 165, 233, 0.22)',
+                transform: `rotate(${capsule.randomTilt || 0}deg)`,
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                padding: '3px',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.08)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = `rotate(${capsule.randomTilt || 0}deg)`)}
+            >
+              {capsule.nameLines.map((line, lIdx) => (
+                <span
+                  key={lIdx}
+                  style={{
+                    fontSize: capsule.nameLines.length > 1 ? '10px' : '11px',
+                    fontWeight: 'bold',
+                    color: '#0369a1',
+                    textAlign: 'center',
+                    lineHeight: '1.2',
+                    maxWidth: '44px',
+                    wordBreak: 'break-all'
+                  }}
+                >
+                  {line}
+                </span>
+              ))}
+            </div>
+          ))}
+
+          {capsulePool.length === 0 && !isAllCorrect && (
+            <div style={{ color: '#64748b', fontSize: '12.5px', fontWeight: 'bold', padding: '12px 0', textAlign: 'center' }}>
+              모든 캡슐이 배치되었습니다. 빨간색 슬롯을 터치하여 다시 조정해보세요!
+            </div>
+          )}
+        </div>
+
+        {/* 성공 축하 배너 */}
+        {isAllCorrect && (
+          <div style={{
+            marginTop: '12px',
+            backgroundColor: '#dcfce7',
+            border: '2px solid #4ade80',
+            borderRadius: '12px',
+            padding: '10px',
+            textAlign: 'center',
+            color: '#166534',
+            fontWeight: 'bold',
+            fontSize: '13.5px'
+          }}>
+            🎉 축하합니다! 완벽하게 순서를 맞추셨습니다!
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// ----------------------------------------------------
+// 🧭 [컴포넌트] 공정플로우 뷰 (공부모드: 기존 뷰 / 테스트모드: 뽑기통 게임)
 // ----------------------------------------------------
 function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
   const [activeStep, setActiveStep] = useState(0);
-  // 테스트모드 개별 스텝 열람 여부 저장 (예: { 0: true, 1: false })
-  const [revealedSteps, setRevealedSteps] = useState({});
   const stepRefs = useRef([]);
 
   // 텍스트/배열 데이터를 바탕으로 단계 분리 파싱
@@ -33,7 +337,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       let title = match ? (match[2] || '공정') : firstLine;
       const body = lines.slice(1).join('\n').trim();
 
-      // 💡 [직접 지정 기능] 제목 내부에 (단어,단어)가 있으면 원형 글자로 채택
+      // 제목 내부에 (단어,단어)가 있으면 원형 글자로 채택
       let customKeyword = null;
       const parenMatch = title.match(/\((.*?)\)/);
       if (parenMatch) {
@@ -56,21 +360,21 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
     });
   }, [contentData]);
 
-  // 품목 변경 또는 모드 전환 시 초기화
+  // 품목 변경 시 첫 번째 단계로 리셋
   useEffect(() => {
     setActiveStep(0);
-    setRevealedSteps({});
   }, [contentData, mode, itemId]);
 
-  // 스텝 터치 시: 해당 스텝 활성화 + 블러 해제(공개) + 자동 스크롤
+  if (steps.length === 0) return null;
+
+  // 🎯 테스트 모드: 뽑기 기계 컴포넌트 호출
+  if (mode === 'test') {
+    return <StepFlowTestGame steps={steps} itemId={itemId} />;
+  }
+
+  // 📖 공부 모드: 가로 1열 트랙 및 하단 설명 박스 렌더링
   const handleStepClick = (idx) => {
     setActiveStep(idx);
-    if (mode === 'test') {
-      setRevealedSteps(prev => ({
-        ...prev,
-        [idx]: true // 누른 스텝을 열람 상태로 변경
-      }));
-    }
     if (stepRefs.current[idx]) {
       stepRefs.current[idx].scrollIntoView({
         behavior: 'smooth',
@@ -79,8 +383,6 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       });
     }
   };
-
-  if (steps.length === 0) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
@@ -104,8 +406,6 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       >
         {steps.map((step, idx) => {
           const isSelected = activeStep === idx;
-          // 공부모드는 항상 공개, 테스트모드는 터치해서 열람된 스텝만 공개
-          const isNodeRevealed = mode === 'study' || !!revealedSteps[idx];
 
           return (
             <div
@@ -120,20 +420,13 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
                 userSelect: 'none'
               }}
             >
-              {/* 원형 노드 */}
               <div style={{
                 width: '52px',
                 height: '52px',
                 borderRadius: '50%',
-                backgroundColor: isSelected 
-                  ? (isNodeRevealed ? '#0284c7' : '#0369a1') 
-                  : (isNodeRevealed ? '#ffffff' : '#f8fafc'),
-                border: isSelected 
-                  ? '2.5px solid #38bdf8' 
-                  : (isNodeRevealed ? '2px solid #bae6fd' : '2px dashed #cbd5e1'),
-                color: isSelected 
-                  ? '#ffffff' 
-                  : (isNodeRevealed ? '#0369a1' : '#94a3b8'),
+                backgroundColor: isSelected ? '#0284c7' : '#ffffff',
+                border: isSelected ? '2.5px solid #38bdf8' : '2px solid #bae6fd',
+                color: isSelected ? '#ffffff' : '#0369a1',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -142,31 +435,13 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
                 transition: 'all 0.2s ease',
                 transform: isSelected ? 'scale(1.05)' : 'scale(1)',
                 padding: '3px',
-                boxSizing: 'border-box',
-                position: 'relative'
+                boxSizing: 'border-box'
               }}>
-                {/* 🔒 미열람 상태일 때 원형 내부에 살짝 나타나는 자물쇠 아이콘 */}
-                {!isNodeRevealed && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '2px',
-                    right: '4px',
-                    fontSize: '9px',
-                    opacity: 0.7
-                  }}>
-                    🔒
-                  </span>
-                )}
-
-                {/* 원형 글자 (테스트모드 기본 블러) */}
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  filter: isNodeRevealed ? 'none' : 'blur(4px)',
-                  opacity: isNodeRevealed ? 1 : 0.35,
-                  transition: 'filter 0.2s, opacity 0.2s'
+                  justifyContent: 'center'
                 }}>
                   {step.nameLines.map((lineText, lineIdx) => (
                     <span 
@@ -231,7 +506,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
         </button>
       </div>
 
-      {/* 3. 세부 암기 박스 (가장 긴 길이에 자동 고정 + 테스트모드 블러 지원) */}
+      {/* 3. 공부모드 전용 세부 내용 박스 */}
       <div style={{
         backgroundColor: '#ffffff',
         border: '1.5px solid #bae6fd',
@@ -245,17 +520,10 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       }}>
         {steps.map((step, idx) => {
           const isSelected = activeStep === idx;
-          const isDetailRevealed = mode === 'study' || !!revealedSteps[idx];
 
           return (
             <div
               key={step.id}
-              onClick={() => {
-                // 테스트모드일 때 본문 영역을 터치해도 블러 해제
-                if (mode === 'test' && !isDetailRevealed) {
-                  setRevealedSteps(prev => ({ ...prev, [idx]: true }));
-                }
-              }}
               style={{
                 gridArea: '1 / 1',
                 visibility: isSelected ? 'visible' : 'hidden',
@@ -263,78 +531,29 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
                 pointerEvents: isSelected ? 'auto' : 'none',
                 transition: 'opacity 0.15s ease-in-out',
                 width: '100%',
-                boxSizing: 'border-box',
-                cursor: (mode === 'test' && !isDetailRevealed) ? 'pointer' : 'default'
+                boxSizing: 'border-box'
               }}
             >
               {/* 스텝 뱃지 & 제목 */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{
-                    backgroundColor: '#0284c7',
-                    color: '#fff',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    padding: '2px 7px',
-                    borderRadius: '12px'
-                  }}>
-                    {step.badge}
-                  </span>
-                  
-                  {/* 제목 (테스트모드 미열람 시 블러) */}
-                  <span style={{ 
-                    fontSize: '14px', 
-                    fontWeight: 'bold', 
-                    color: '#0f172a',
-                    filter: isDetailRevealed ? 'none' : 'blur(5px)',
-                    opacity: isDetailRevealed ? 1 : 0.35,
-                    transition: 'filter 0.2s, opacity 0.2s'
-                  }}>
-                    {step.title}
-                  </span>
-                </div>
-
-                {mode === 'test' && (
-                  <span style={{ fontSize: '13px' }}>
-                    {isDetailRevealed ? '👁️' : '🔒'}
-                  </span>
-                )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                <span style={{
+                  backgroundColor: '#0284c7',
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  padding: '2px 7px',
+                  borderRadius: '12px'
+                }}>
+                  {step.badge}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a' }}>
+                  {step.title}
+                </span>
               </div>
 
-              {/* 본문 내용 (테스트모드 미열람 시 블러) */}
-              <div style={{
-                position: 'relative',
-                minHeight: '40px'
-              }}>
-                <div style={{
-                  filter: isDetailRevealed ? 'none' : 'blur(6px)',
-                  opacity: isDetailRevealed ? 1 : 0.25,
-                  userSelect: isDetailRevealed ? 'text' : 'none',
-                  transition: 'filter 0.2s, opacity 0.2s'
-                }}>
-                  {renderFormattedNotes(step.body)}
-                </div>
-
-                {/* 미열람 안내 오버레이 문구 */}
-                {mode === 'test' && !isDetailRevealed && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    color: '#0369a1',
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    border: '1px dashed #38bdf8',
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    터치하여 내용 확인하기 👆
-                  </div>
-                )}
+              {/* 본문 내용 */}
+              <div style={{ minHeight: '40px' }}>
+                {renderFormattedNotes(step.body)}
               </div>
             </div>
           );
@@ -345,6 +564,9 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
   );
 }
 
+// ----------------------------------------------------
+// 🏠 메인 App 컴포넌트
+// ----------------------------------------------------
 function App() {
   const [mode, setMode] = useState('study');
   const [hiddenState, setHiddenState] = useState({});
@@ -430,9 +652,7 @@ function App() {
     return typeof textData === 'string' ? textData : textData.text;
   };
 
-  // ----------------------------------------------------
   // 📝 사용자 정의 규칙 기반 정리노트 포맷팅 렌더러
-  // ----------------------------------------------------
   const renderFormattedNotes = (keyPoints) => {
     let text = Array.isArray(keyPoints)
       ? keyPoints.map(kp => renderPlainText(kp)).join('\n')
@@ -490,11 +710,11 @@ function App() {
                   fontWeight: 'bold', 
                   color: '#713f12', 
                   marginTop: idx === 0 ? '0px' : '14px', 
-                  paddingBottom: '5px',
-                  borderBottom: '1.5px dashed #fde047',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
+                  paddingBottom: '5px', 
+                  borderBottom: '1.5px dashed #fde047', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px' 
                 }}
               >
                 <span>📌</span>
@@ -512,11 +732,11 @@ function App() {
                   fontSize: '13.5px', 
                   fontWeight: 'bold', 
                   color: '#854d0e', 
-                  marginTop: '8px',
-                  marginBottom: '2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
+                  marginTop: '8px', 
+                  marginBottom: '2px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px' 
                 }}
               >
                 <span>▫️</span>
@@ -537,7 +757,7 @@ function App() {
                   fontSize: '12.5px', 
                   color: '#713f12', 
                   lineHeight: '1.5', 
-                  margin: '4px 0'
+                  margin: '4px 0' 
                 }}
               >
                 {formatInlineBold(line)}
@@ -558,7 +778,7 @@ function App() {
                   fontSize: '12.5px', 
                   color: '#78350f', 
                   lineHeight: '1.55', 
-                  margin: '2px 0 4px 6px'
+                  margin: '2px 0 4px 6px' 
                 }}
               >
                 {formatInlineBold(quoteContent)}
@@ -583,7 +803,7 @@ function App() {
                   fontSize: '13px', 
                   lineHeight: '1.6', 
                   color: '#78350f', 
-                  paddingLeft: isNumbered ? '2px' : '6px'
+                  paddingLeft: isNumbered ? '2px' : '6px' 
                 }}
               >
                 <span style={{ color: '#ca8a04', fontWeight: 'bold', flexShrink: 0 }}>
@@ -650,7 +870,7 @@ function App() {
               color: mode === 'study' ? '#166534' : '#6b7280', 
               fontWeight: 'bold', 
               cursor: 'pointer', 
-              fontSize: '13px'
+              fontSize: '13px' 
             }}
           >
             📖 공부노트
@@ -668,7 +888,7 @@ function App() {
               color: mode === 'test' ? '#166534' : '#6b7280', 
               fontWeight: 'bold', 
               cursor: 'pointer', 
-              fontSize: '13px'
+              fontSize: '13px' 
             }}
           >
             🎯 테스트노트
@@ -792,9 +1012,9 @@ function App() {
                     outline: 'none'
                   }}
                 >
-                  {studyList.map((item, idx) => (
-                    <option key={item.id || idx} value={idx}>
-                      {item.title}
+                  {studyList.map((listItem, idx) => (
+                    <option key={listItem.id || idx} value={idx}>
+                      {listItem.title}
                     </option>
                   ))}
                 </select>
@@ -829,9 +1049,9 @@ function App() {
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', 
                 gap: '10px', 
-                marginBottom: '15px',
-                width: '100%',
-                boxSizing: 'border-box'
+                marginBottom: '15px', 
+                width: '100%', 
+                boxSizing: 'border-box' 
               }}>
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 방법</div>
@@ -1055,7 +1275,7 @@ function App() {
             )}
 
             {/* ---------------------------------------------------------------- */}
-            {/* 2. 공정플로우 및 상세과정설명 영역 (공부노트/테스트노트 공통 적용) */}
+            {/* 공정플로우 및 상세과정설명 영역 */}
             {/* ---------------------------------------------------------------- */}
             {(() => {
               const summaryContent = item.summary || item.keyPoint;
@@ -1067,7 +1287,7 @@ function App() {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', marginTop: '24px' }}>
                   
-                  {/* ✨ [공통] 공정플로우 (터치하여 확인) */}
+                  {/* ✨ 공정플로우 */}
                   {hasSummary && (
                     <div>
                       <div style={{ 
@@ -1080,7 +1300,9 @@ function App() {
                         gap: '6px' 
                       }}>
                         <span>🧭</span>
-                        <span>공정플로우 (터치하여 확인)</span>
+                        <span>
+                          {mode === 'test' ? '공정 순서 맞추기 (뽑기통)' : '공정플로우 (터치하여 확인)'}
+                        </span>
                       </div>
 
                       <div style={{ 
@@ -1092,7 +1314,6 @@ function App() {
                         width: '100%', 
                         boxSizing: 'border-box' 
                       }}>
-                        {/* ✨ mode와 itemId를 넘겨주어 테스트노트 블러/초기화 제어 */}
                         <StepFlowView 
                           contentData={summaryContent} 
                           renderFormattedNotes={renderFormattedNotes} 
