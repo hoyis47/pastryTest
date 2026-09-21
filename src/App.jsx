@@ -1582,7 +1582,7 @@ function App() {
       boxSizing: 'border-box' 
     }}>
       
-      {/* 1. 상단 헤더 & 4가지 모드 전환 버튼 ('테스트'로 변경) */}
+      {/* 1. 상단 헤더 & 4가지 모드 전환 버튼 */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -1618,7 +1618,6 @@ function App() {
             📖 공부노트
           </button>
           
-          {/* ✨ '테스트노트' -> '테스트' 로 변경된 버튼 */}
           <button 
             onClick={() => {
               setMode('test');
@@ -1803,7 +1802,6 @@ function App() {
                     outline: 'none'
                   }}
                 >
-                  {/* ✨ 반죽법 표기를 빼고 품목명만 나오도록 수정 */}
                   {studyList.map((listItem, idx) => (
                     <option key={listItem.id || idx} value={idx}>
                       {listItem.title}
@@ -2009,64 +2007,7 @@ function App() {
               );
             })()}
 
-            {/* 공부 모드 동영상 */}
-            {mode === 'study' && (
-              <>
-                {hasVideoAccess && item.videos && item.videos.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
-                    {item.videos.map((v, vIdx) => {
-                      const videoUrl = typeof v === 'string' ? v : v.url;
-                      const videoTitle = typeof v === 'string' ? `참고 영상 ${vIdx + 1}` : (v.title || `참고 영상 ${vIdx + 1}`);
-
-                      return (
-                        <div 
-                          key={vIdx} 
-                          style={{ 
-                            backgroundColor: '#fdfbf7', 
-                            border: '1px solid #f1ece4', 
-                            borderRadius: '12px', 
-                            padding: '12px 14px', 
-                            boxSizing: 'border-box' 
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '14px' }}>🎬</span>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#44403c', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                              {videoTitle}
-                            </span>
-                          </div>
-
-                          <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
-                            <iframe 
-                              src={getEmbedUrl(videoUrl)} 
-                              title={videoTitle}
-                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    <div style={{ 
-                      fontSize: '11.5px', 
-                      color: '#9ca3af', 
-                      textAlign: 'center', 
-                      marginTop: '-4px', 
-                      lineHeight: '1.4', 
-                      wordBreak: 'break-word', 
-                      overflowWrap: 'anywhere', 
-                      padding: '0 8px' 
-                    }}>
-                      ※ 본 실습 영상은 학습자 전용 일부공개 영상이므로, 외부 링크 유출 없이 이곳에서만 시청해 주시기 바랍니다.
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* 공정플로우 및 상세과정설명 */}
+            {/* 공정 순서 및 상세과정설명 */}
             {(() => {
               const summaryContent = item.summary || item.keyPoint;
               const hasSummary = Array.isArray(summaryContent) ? summaryContent.length > 0 : Boolean(summaryContent);
@@ -2143,6 +2084,63 @@ function App() {
                 </div>
               );
             })()}
+
+            {/* ✨ 공부 모드 동영상: 상세과정설명(상세노트) 아래로 배치 */}
+            {mode === 'study' && (
+              <>
+                {hasVideoAccess && item.videos && item.videos.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px', marginBottom: '12px', width: '100%', boxSizing: 'border-box' }}>
+                    {item.videos.map((v, vIdx) => {
+                      const videoUrl = typeof v === 'string' ? v : v.url;
+                      const videoTitle = typeof v === 'string' ? `참고 영상 ${vIdx + 1}` : (v.title || `참고 영상 ${vIdx + 1}`);
+
+                      return (
+                        <div 
+                          key={vIdx} 
+                          style={{ 
+                            backgroundColor: '#fdfbf7', 
+                            border: '1px solid #f1ece4', 
+                            borderRadius: '12px', 
+                            padding: '12px 14px', 
+                            boxSizing: 'border-box' 
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '14px' }}>🎬</span>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#44403c', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                              {videoTitle}
+                            </span>
+                          </div>
+
+                          <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+                            <iframe 
+                              src={getEmbedUrl(videoUrl)} 
+                              title={videoTitle}
+                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div style={{ 
+                      fontSize: '11.5px', 
+                      color: '#9ca3af', 
+                      textAlign: 'center', 
+                      marginTop: '-4px', 
+                      lineHeight: '1.4', 
+                      wordBreak: 'break-word', 
+                      overflowWrap: 'anywhere', 
+                      padding: '0 8px' 
+                    }}>
+                      ※ 본 실습 영상은 학습자 전용 일부공개 영상이므로, 외부 링크 유출 없이 이곳에서만 시청해 주시기 바랍니다.
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
           </div>
         );
