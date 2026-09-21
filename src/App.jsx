@@ -1803,9 +1803,10 @@ function App() {
                     outline: 'none'
                   }}
                 >
+                  {/* ✨ 반죽법 표기를 빼고 품목명만 나오도록 수정 */}
                   {studyList.map((listItem, idx) => (
                     <option key={listItem.id || idx} value={idx}>
-                      {listItem.title} {listItem.spec?.mixingMethod ? `(${listItem.spec.mixingMethod})` : ''}
+                      {listItem.title}
                     </option>
                   ))}
                 </select>
@@ -2088,7 +2089,7 @@ function App() {
                       }}>
                         <span>🧭</span>
                         <span>
-                          {mode === 'test' ? '공정 순서 맞추기 (뽑기통)' : '공정플로우 (터치하여 확인)'}
+                          {mode === 'test' ? '공정 순서 맞추기 (뽑기통)' : '공정 순서 (터치하세요)'}
                         </span>
                       </div>
 
