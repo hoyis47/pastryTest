@@ -824,6 +824,42 @@ const studyList = [
 - **온도 및 시간:** 윗불 170/ 밑불 160℃ 기준 약 **40~45분간** 굽습니다.
 - **완료시점:** 이쑤시개나 젓가락으로 가운데를 찔러 묻어나오지 않으면 굽기 완료합니다.
 - 오븐에서 꺼낸 뒤 쇼크를 한 번 주고 식힘망으로 옮겨 제출합니다.`
+  },
+  {
+    "id": 6,
+    "category": "24페이지",
+    "title": "젤리 롤 케이크",
+    "spec": {
+      "mixingMethod": "공립법",
+      "doughTemp": "23℃",
+      "specificGravity": "0.45 ± 0.05",
+      "ovenTemp": "175℃ / 155℃",
+      "bakingTime": "18~20분",
+      "note": "비중 0.44~0.46 - 제품 완성도 가장 높음"
+    },
+    "mixingType": "기계사용",     // '수작업' 또는 '기계사용'
+    "isWarmed": "1",         // 가온법 여부
+    "isSacrifice": "1",      // 희생반죽 여부
+    "videos": [
+      {
+        "title": "젤리 롤 케이크",
+        "url": "https://youtu.be/kmWfALXkKJg"
+      },
+      {
+        "title": "젤리 롤 케이크 ",
+        "url": "https://youtube.com/shorts/GN-jL0LQwMQ?feature=share"
+      },
+      {
+        "title": "젤리 롤 케이크 말기",
+        "url": "https://youtu.be/bXrwb4NscfI"
+      }
+    ],
+    
+    // 💡 [핵심요약 마크다운] 상단 표시용 초압축 버전
+    "summary": ``,
+
+    // 💡 [상세과정설명 마크다운] 하단 표시용 상세 버전
+    "detail": ``
   }
 ];
 
