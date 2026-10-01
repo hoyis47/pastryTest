@@ -7,5 +7,13 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // 모든 네트워크 인터페이스에서 접근 허용
     port: 5173,      // 포트 번호 고정 (선택 사항)
+    // --- [새로 삽입되는 부분 시작] ---
+    proxy: {
+      '/api': {
+        target: 'https://pastry-test.vercel.app',
+        changeOrigin: true,
+      },
+    },
+    // --- [새로 삽입되는 부분 끝] ---
   },
 })

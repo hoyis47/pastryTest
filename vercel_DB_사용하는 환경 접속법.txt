@@ -1,0 +1,3 @@
+npx vercel dev
+
+localhost:3000

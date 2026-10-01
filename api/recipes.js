@@ -1,5 +1,9 @@
 // api/recipes.js
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
+
+// DATABASE_URL 또는 POSTGRES_URL 중 존재하는 것 자동 사용
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const sql = neon(databaseUrl);
 
 export default async function handler(request, response) {
   // CORS 헤더 설정 (필요시)
@@ -7,14 +11,39 @@ export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (request.method === 'OPTIONS') {
+ if (request.method === 'OPTIONS') {
     return response.status(200).end();
   }
 
   // 1. [GET] 전체 품목 조회 (사용자 화면용)
   if (request.method === 'GET') {
     try {
-      const { rows } = await sql`
+      // --- [수정 및 삽입 부분 시작] ---
+      // 1) 테이블이 없는 경우 500 에러 없이 자동 생성
+      await sql`
+        CREATE TABLE IF NOT EXISTS recipes (
+          item_id INTEGER PRIMARY KEY,
+          category TEXT,
+          title TEXT NOT NULL,
+          mixing_method TEXT,
+          dough_temp TEXT,
+          specific_gravity TEXT,
+          oven_temp TEXT,
+          baking_time TEXT,
+          note TEXT,
+          mixing_type TEXT,
+          is_warmed TEXT,
+          is_sacrifice TEXT,
+          videos JSONB DEFAULT '[]'::jsonb,
+          summary TEXT,
+          detail TEXT,
+          is_summary_published BOOLEAN DEFAULT false,
+          is_detail_published BOOLEAN DEFAULT false
+        );
+      `;
+
+      // 2) 전체 품목 조회 쿼리 실행
+      const result = await sql`
         SELECT 
           item_id as id,
           category,
@@ -37,7 +66,10 @@ export default async function handler(request, response) {
         ORDER BY item_id ASC;
       `;
 
-      // 기존 studyData.js의 객체 구조와 동일하게 매핑
+      // 3) 드라이버 버전에 따른 반환 형태({ rows: [] } 또는 배열) 안전 처리
+      const rows = Array.isArray(result) ? result : (result?.rows || []);
+      // --- [수정 및 삽입 부분 끝] ---
+
       const formattedList = rows.map(row => ({
         id: row.id,
         category: row.category,
@@ -109,11 +141,12 @@ export default async function handler(request, response) {
       const videosJson = JSON.stringify(videos || []);
 
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
+      // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
       if (id) {
         await sql`
           UPDATE recipes
           SET 
-            category = ${category},
+            category = ${categoryVal},
             title = ${title},
             mixing_method = ${mixingMethod},
             dough_temp = ${doughTemp},
@@ -121,9 +154,9 @@ export default async function handler(request, response) {
             oven_temp = ${ovenTemp},
             baking_time = ${bakingTime},
             note = ${note},
-            mixing_type = ${mixingType},
-            is_warmed = ${isWarmed},
-            is_sacrifice = ${isSacrifice},
+            mixing_type = ${mixingTypeVal},
+            is_warmed = ${isWarmedVal},
+            is_sacrifice = ${isSacrificeVal},
             videos = ${videosJson}::jsonb,
             summary = ${summary},
             detail = ${detail},
@@ -134,7 +167,7 @@ export default async function handler(request, response) {
       } else {
         // 새 item_id 생성 (가장 큰 id + 1)
         const maxResult = await sql`SELECT COALESCE(MAX(item_id), 0) + 1 AS next_id FROM recipes;`;
-        const nextId = maxResult.rows[0].next_id;
+        const nextId = (maxResult[0]?.next_id || (maxResult.rows && maxResult.rows[0]?.next_id)) || 1;
 
         await sql`
           INSERT INTO recipes (
@@ -142,8 +175,8 @@ export default async function handler(request, response) {
             oven_temp, baking_time, note, mixing_type, is_warmed, is_sacrifice,
             videos, summary, detail, is_summary_published, is_detail_published
           ) VALUES (
-            ${nextId}, ${category}, ${title}, ${mixingMethod}, ${doughTemp}, ${specificGravity},
-            ${ovenTemp}, ${bakingTime}, ${note}, ${mixingType}, ${isWarmed}, ${isSacrifice},
+            ${nextId}, ${categoryVal}, ${title}, ${mixingMethod}, ${doughTemp}, ${specificGravity},
+            ${ovenTemp}, ${bakingTime}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
             ${videosJson}::jsonb, ${summary}, ${detail}, ${isSummaryPublished}, ${isDetailPublished}
           );
         `;
