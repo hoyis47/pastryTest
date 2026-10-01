@@ -60,9 +60,9 @@ export default async function handler(request, response) {
 }
 `;
 
-    // 별도 외부 라이브러리 없이 공식 REST API로 직접 통신
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
+    // 별도 외부 라이브러리 없이 공식 REST API로 직접 통신 (일일 500회 지원 모델 적용)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
+    
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
