@@ -22,8 +22,7 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: 'GEMINI_API_KEY 환경변수가 설정되지 않았습니다.' });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-
+    
     const prompt = `
 당신은 대한민국 제과기능사 국가기술자격 실기 시험 학습 데이터 정리 전문가입니다.
 대상 품목: "${title || '제과 실기 품목'}"
@@ -62,7 +61,7 @@ export default async function handler(request, response) {
 `;
 
     // 별도 외부 라이브러리 없이 공식 REST API로 직접 통신
-    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$){apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
