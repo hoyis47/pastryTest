@@ -17,7 +17,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
     mixingType: '수작업',
     isWarmed: '0',
     isSacrifice: '0',
-    videoUrl: '',
+    videos: [{ title: '', url: '' }],
     summary: '',
     detail: '',
     isSummaryPublished: false,
@@ -29,6 +29,10 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
 
   useEffect(() => {
     if (targetRecipe) {
+      const initialVideos = (targetRecipe.videos && targetRecipe.videos.length > 0)
+        ? targetRecipe.videos.map(v => typeof v === 'string' ? { title: '', url: v } : { title: v.title || '', url: v.url || '' })
+        : [{ title: '', url: '' }];
+
       setFormData({
         id: targetRecipe.id,
         category: targetRecipe.category || '',
@@ -44,7 +48,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         mixingType: targetRecipe.mixingType || '수작업',
         isWarmed: String(targetRecipe.isWarmed || '0'),
         isSacrifice: String(targetRecipe.isSacrifice || '0'),
-        videoUrl: targetRecipe.videos?.[0]?.url || '',
+        videos: initialVideos,
         summary: targetRecipe.rawSummary !== undefined ? targetRecipe.rawSummary : (targetRecipe.summary || ''),
         detail: targetRecipe.rawDetail !== undefined ? targetRecipe.rawDetail : (targetRecipe.detail || ''),
         isSummaryPublished: Boolean(targetRecipe.isSummaryPublished),
@@ -59,7 +63,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         mixingType: '수작업',
         isWarmed: '0',
         isSacrifice: '0',
-        videoUrl: '',
+        videos: [{ title: '', url: '' }],
         summary: '',
         detail: '',
         isSummaryPublished: false,
@@ -70,10 +74,37 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
 
   if (!isOpen) return null;
 
+  // 🎬 동영상 목록 조작 함수들
+  const handleAddVideo = () => {
+    setFormData(prev => ({
+      ...prev,
+      videos: [...prev.videos, { title: '', url: '' }]
+    }));
+  };
+
+  const handleRemoveVideo = (index) => {
+    setFormData(prev => {
+      const updated = prev.videos.filter((_, idx) => idx !== index);
+      return {
+        ...prev,
+        videos: updated.length > 0 ? updated : [{ title: '', url: '' }]
+      };
+    });
+  };
+
+  const handleVideoChange = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.videos];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, videos: updated };
+    });
+  };
+
   // 🪄 Gemini AI 요약/상세 자동 추출
   const handleAiGenerate = async () => {
-    if (!formData.videoUrl) {
-      alert('유튜브 영상 URL을 입력해 주세요.');
+    const firstUrl = formData.videos.find(v => v.url?.trim())?.url?.trim();
+    if (!firstUrl) {
+      alert('AI 요약을 추출할 유튜브 영상 URL을 1개 이상 입력해 주세요.');
       return;
     }
     try {
@@ -82,7 +113,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          videoUrl: formData.videoUrl,
+          videoUrl: firstUrl,
           title: formData.title,
           adminPassword: secretKey
         })
@@ -123,9 +154,12 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
     }
     try {
       setIsSaving(true);
-      const videos = formData.videoUrl.trim()
-        ? [{ title: formData.title, url: formData.videoUrl.trim() }]
-        : [];
+      const cleanedVideos = (formData.videos || [])
+        .map((v, i) => ({
+          title: v.title?.trim() || `${formData.title} 참고 영상 ${i + 1}`,
+          url: v.url?.trim() || ''
+        }))
+        .filter(v => v.url !== '');
 
       // 기호 제거 정제 로직
       const cleanDoughTemp = (formData.spec.doughTemp || '').replace(/℃/g, '').trim();
@@ -142,7 +176,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
           bakingTime: cleanBakingTime,
           specificGravity: cleanGravity
         },
-        videos,
+        videos: cleanedVideos,
         adminPassword: secretKey
       };
 
@@ -211,25 +245,67 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         </div>
 
         <div>
-          <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>유튜브 영상 URL</label>
-          <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-            <input
-              type="text"
-              value={formData.videoUrl}
-              onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
-              placeholder="https://youtu.be/..."
-              style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-            />
-            <button
-              onClick={handleAiGenerate}
-              disabled={isAiLoading}
-              style={{
-                backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
-                padding: '0 12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >
-              {isAiLoading ? '⏳ AI 분석 중...' : '🪄 AI 요약/상세 추출'}
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>
+              🎬 참고 동영상 등록 ({formData.videos.length}개)
+            </label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handleAddVideo}
+                style={{
+                  backgroundColor: '#f1f5f9', color: '#0f766e', border: '1px solid #cbd5e1',
+                  borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer'
+                }}
+              >
+                ➕ 영상 추가
+              </button>
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={isAiLoading}
+                style={{
+                  backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
+                  padding: '3px 10px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap'
+                }}
+              >
+                {isAiLoading ? '⏳ AI 분석 중...' : '🪄 AI 요약/상세 추출'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+            {formData.videos.map((vid, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={vid.title}
+                  onChange={e => handleVideoChange(idx, 'title', e.target.value)}
+                  placeholder={`영상 제목 (선택, 기본: 영상 ${idx + 1})`}
+                  style={{ width: '35%', padding: '7px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', boxSizing: 'border-box' }}
+                />
+                <input
+                  type="text"
+                  value={vid.url}
+                  onChange={e => handleVideoChange(idx, 'url', e.target.value)}
+                  placeholder="https://youtu.be/... (링크 붙여넣기)"
+                  style={{ flex: 1, padding: '7px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', boxSizing: 'border-box' }}
+                />
+                {formData.videos.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveVideo(idx)}
+                    style={{
+                      border: '1px solid #cbd5e1', background: '#fff', color: '#ef4444',
+                      borderRadius: '6px', padding: '6px 9px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer'
+                    }}
+                    title="해당 영상 삭제"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
