@@ -1388,16 +1388,20 @@ function App() {
     }));
   };
 
+  // ---------------- [수정 후] ----------------
   const getEmbedUrl = (url) => {
     if (!url) return '';
-    let videoId = '';
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } else if (url.includes('watch?v=')) {
-      videoId = url.split('watch?v=')[1]?.split('&')[0];
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    const cleanUrl = String(url).trim();
+    // 이미 embed 형태인 경우 그대로 반환
+    if (cleanUrl.includes('youtube.com/embed/')) return cleanUrl;
+
+    // watch?v=, youtu.be/, shorts/, embed/ 등 다양한 형태에서 11자리 비디오 ID 추출
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/;
+    const match = cleanUrl.match(regExp);
+
+    return match && match[1] ? `https://www.youtube.com/embed/${match[1]}` : cleanUrl;
   };
+  // -------------------------------------------
 
   const parseSpecificGravity = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return null;
