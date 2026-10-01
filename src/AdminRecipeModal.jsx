@@ -104,18 +104,6 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
       
       setFormData(prev => ({
         ...prev,
-        spec: {
-          ...prev.spec,
-          mixingMethod: data.mixingMethod || prev.spec.mixingMethod,
-          doughTemp: data.doughTemp || prev.spec.doughTemp,
-          specificGravity: data.specificGravity || prev.spec.specificGravity,
-          ovenTemp: data.ovenTemp || prev.spec.ovenTemp,
-          bakingTime: data.bakingTime || prev.spec.bakingTime,
-          note: data.note || prev.spec.note
-        },
-        mixingType: data.mixingType || prev.mixingType,
-        isWarmed: data.isWarmed !== undefined ? String(data.isWarmed) : prev.isWarmed,
-        isSacrifice: data.isSacrifice !== undefined ? String(data.isSacrifice) : prev.isSacrifice,
         summary: data.summary || prev.summary,
         detail: data.detail || prev.detail
       }));
