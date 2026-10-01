@@ -967,7 +967,12 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const formatGravity = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '-';
-    return text.replace(/\s+/g, '');
+    const clean = text.replace(/\s+/g, '');
+    // ± 기호가 없는데 숫자(예: 0.45, .55 등)만 입력된 경우 ±0.05 자동 부착
+    if (!clean.includes('±') && /^[\d.]+$/.test(clean)) {
+      return `${clean}±0.05`;
+    }
+    return clean;
   };
 
   const renderItemTitle = (title) => {
