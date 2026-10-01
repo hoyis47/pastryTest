@@ -89,11 +89,19 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'AI 추출 실패');
+        const errText = await res.text();
+        let errMsg = 'AI 추출 실패';
+        try {
+          const errObj = JSON.parse(errText);
+          errMsg = errObj.error || errMsg;
+        } catch {
+          errMsg = errText || errMsg;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
+      
       setFormData(prev => ({
         ...prev,
         spec: {

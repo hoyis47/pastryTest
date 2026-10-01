@@ -1,5 +1,4 @@
 // api/generate-ai.js
-import { GoogleGenAI } from '@google/genai';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -62,16 +61,29 @@ export default async function handler(request, response) {
 }
 `;
 
-    const aiResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
+    // 별도 외부 라이브러리 없이 공식 REST API로 직접 통신
+    const geminiUrl = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$){apiKey}`;
+
+    const geminiRes = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      })
     });
 
-    let cleanText = aiResponse.text ? aiResponse.text.trim() : '';
-    // 마크다운 코드 블록(```json ... ```) 제거 처리
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      throw new Error(`Gemini API 호출 실패 (${geminiRes.status}): ${errText}`);
+    }
+
+    const geminiData = await geminiRes.json();
+    let cleanText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    cleanText = cleanText.trim();
+
     if (cleanText.startsWith('```')) {
       cleanText = cleanText.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
     }
