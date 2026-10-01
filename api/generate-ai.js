@@ -26,39 +26,39 @@ export default async function handler(request, response) {
     const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `
-당신은 제과기능사 실기 시험 학습 데이터 정리 전문가입니다.
-품목명: "${title || '제과 실기 품목'}"
+당신은 대한민국 제과기능사 국가기술자격 실기 시험 학습 데이터 정리 전문가입니다.
+대상 품목: "${title || '제과 실기 품목'}"
 참고 영상 링크: "${videoUrl}"
 
-영상 내용과 제과기능사 표준 공정을 분석하여 아래 JSON 규격에 맞춰 데이터를 생성해 주세요.
-만약 영상에서 특정 스펙 수치를 알 수 없다면 빈칸("") 또는 "-"로 남겨두세요.
+제과기능사 공식 시험 출제 기준 및 표준 실기 공정 규격에 맞추어 아래 JSON 형식으로 데이터를 생성해 주세요.
+수치를 특정할 수 없는 항목은 빈칸("") 또는 "-"로 채워주세요.
 
-[규격 안내]
-1. summary (상단 캡슐 게임용 공정 요약):
-   - 반드시 "### [1단계] 단계제목 (키워드1, 키워드2)" 형식으로 작성할 것.
-   - 괄호 안 키워드는 캡슐에 들어갈 단어로 1~3단어, 쉼표로 구분할 것.
-   - 단계 본문은 불릿 포인트(-) 2~3줄로 행동 요령만 초압축할 것.
+[작성 규칙]
+1. summary (상단 공정 요약 및 캡슐 게임용):
+   - 각 단계 제목은 반드시 "### [1단계] 단계제목 (키워드1, 키워드2)" 형식으로 작성할 것.
+   - 괄호 안 키워드는 모바일 원형 캡슐에 들어갈 핵심 단어로 1~2단어(최대 3단어), 쉼표로 구분할 것.
+   - 각 단계 본문은 하이픈 불릿(-) 2~3줄로 행동 요령만 간결히 요약할 것.
 2. detail (하단 상세 학습노트용):
-   - "[1] 단계명", "[2] 단계명" 형식으로 번호 매김.
-   - 주요 포인트는 "■ 소제목"으로 표시.
-   - 핵심 주의사항은 반드시 아래 형식의 인용 블록으로 작성:
+   - 단계는 "[1] 단계명", "[2] 단계명" 형식으로 번호를 매길 것.
+   - 세부 과정 설명은 "■ 소제목"으로 구분할 것.
+   - 중요한 팁이나 주의사항은 반드시 아래의 형식으로 작성할 것:
      💡 [주의] 주의사항 제목
-     > 주의사항 상세 설명
+     > 주의사항 상세 내용
 
-반드시 아래 JSON 스키마 형식으로만 응답하세요:
+반드시 순수 JSON 객체 형태로만 출력하세요:
 {
-  "mixingMethod": "크림법/공립법/별립법 등",
-  ""category": "시험시간 (예: 2시간, 110분 등)",
-  "doughTemp": "기호 없이 숫자만 (예: 20)",
+  "category": "시험시간 (예: 2시간 또는 120분)",
+  "mixingMethod": "반죽법 (예: 크림법, 공립법, 별립법, 1단계변형법 등)",
+  "doughTemp": "기호 없이 숫자만 (예: 20, 24)",
   "specificGravity": "기호 없이 기준 숫자만 (예: 0.55 또는 -)",
   "ovenTemp": "기호 없이 숫자만 (예: 180 / 160)",
-  "bakingTime": "기호 없이 숫자만 (예: 20~25)",
-  "note": "수작업, 냉장휴지 30분 등",
+  "bakingTime": "기호 없이 숫자만 (예: 25 또는 20~25)",
+  "note": "특이사항 (예: 수작업, 호두 굽기 필수, 냉장휴지 등)",
   "mixingType": "수작업 또는 기계사용",
   "isWarmed": "0 또는 1",
   "isSacrifice": "0 또는 1",
-  "summary": "마크다운 문자열",
-  "detail": "마크다운 문자열"
+  "summary": "공정 요약 마크다운 문자열",
+  "detail": "상세 설명 마크다운 문자열"
 }
 `;
 
@@ -70,7 +70,13 @@ export default async function handler(request, response) {
       },
     });
 
-    const resultJson = JSON.parse(aiResponse.text.trim());
+    let cleanText = aiResponse.text ? aiResponse.text.trim() : '';
+    // 마크다운 코드 블록(```json ... ```) 제거 처리
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    }
+
+    const resultJson = JSON.parse(cleanText);
     return response.status(200).json(resultJson);
 
   } catch (error) {
