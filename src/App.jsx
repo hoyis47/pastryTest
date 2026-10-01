@@ -1325,6 +1325,8 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
+          // 배운 순서(id 오름차순)대로 정렬
+          const sortedData = [...data].sort((a, b) => Number(a.id) - Number(b.id));
           setStudyList(data);
         }
       }
