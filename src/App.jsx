@@ -1983,9 +1983,29 @@ function App() {
                   </div>
                 </div>
 
-                {/* 2. 반죽 온도 (숫자만 있어도 ℃ 자동 부착) */}
+                {/* 2. 반죽 온도 (숫자만 있어도 ℃ 자동 부착 + 핸드폰용 초소형 시험시간 배지) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
-                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 온도</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 온도</span>
+                    {item.category && (
+                      <span
+                        style={{
+                          backgroundColor: '#dcfce7',
+                          color: '#166534',
+                          border: '1px solid #86efac',
+                          borderRadius: '4px',
+                          padding: '0 4px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          lineHeight: '1.4',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={`시험시간: ${item.category}`}
+                      >
+                        ⏱️{item.category}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {displayTemp(item.spec.doughTemp)}
                   </div>
