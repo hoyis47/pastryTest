@@ -1317,7 +1317,9 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [hasVideoAccess, setHasVideoAccess] = useState(false);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const SECRET_ACCESS_KEY = 'cookie2026';
+  const ADMIN_KEY = 'hoyang';
 
   // ✨ 2. 관리자 모달 제어 상태
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -1344,27 +1346,39 @@ function App() {
     fetchRecipesFromDB(); // 앱 로딩 시 DB에서 데이터 패치
   }, []);
 
-  // 🔑 관리자 권한 확인 후 모달 오픈 (hasVideoAccess 상태 활용)
+  // 🔑 관리자 권한 확인 후 모달 오픈 (hasAdminAccess 상태 활용)
   const handleOpenAdminModal = (target = null) => {
-    if (hasVideoAccess) {
+    if (hasAdminAccess) {
       setEditTargetRecipe(target);
       setIsAdminModalOpen(true);
     }
   };
 
   useEffect(() => {
-    const isVip = localStorage.getItem('hasVideoAccess') === 'true';
-    if (isVip) {
+    // 1. 기존 localStorage 권한 복원
+    if (localStorage.getItem('hasVideoAccess') === 'true') {
       setHasVideoAccess(true);
-      return;
+    }
+    if (localStorage.getItem('hasAdminAccess') === 'true') {
+      setHasAdminAccess(true);
     }
 
+    // 2. URL 파라미터 판별 (?access=cookie2026&admin=hoyang)
     const params = new URLSearchParams(window.location.search);
     const accessKey = params.get('access');
+    const adminKey = params.get('admin');
 
     if (accessKey === SECRET_ACCESS_KEY) {
       localStorage.setItem('hasVideoAccess', 'true');
       setHasVideoAccess(true);
+    }
+
+    if (adminKey === ADMIN_KEY) {
+      localStorage.setItem('hasAdminAccess', 'true');
+      setHasAdminAccess(true);
+    }
+
+    if (accessKey || adminKey) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -1690,8 +1704,7 @@ function App() {
         {/* 상단 4대 탭 */}
         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
 
-          {/* ✨ access_key 인증 시에만 노출 */}
-          {hasVideoAccess && (
+          {hasAdminAccess && (
             <button 
               onClick={() => handleOpenAdminModal(null)}
               style={{ 
@@ -1921,8 +1934,7 @@ function App() {
                   ))}
                 </select>
 
-                {/* ✨ access_key 인증 시에만 노출 */}
-                {hasVideoAccess && (
+                {hasAdminAccess && (
                   <button
                     onClick={() => handleOpenAdminModal(currentItem)}
                     style={{
