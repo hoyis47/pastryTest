@@ -1355,30 +1355,34 @@ function App() {
   };
 
   useEffect(() => {
-    // 1. 기존 localStorage 권한 복원
-    if (localStorage.getItem('hasVideoAccess') === 'true') {
-      setHasVideoAccess(true);
-    }
-    if (localStorage.getItem('hasAdminAccess') === 'true') {
-      setHasAdminAccess(true);
-    }
-
-    // 2. URL 파라미터 판별 (?access=cookie2026&admin=hoyang)
-    const params = new URLSearchParams(window.location.search);
+    // 1. URL 쿼리 파라미터 확인 (search 및 href 전체에서 안전 추출)
+    const searchStr = window.location.search || (window.location.href.includes('?') ? '?' + window.location.href.split('?')[1] : '');
+    const params = new URLSearchParams(searchStr);
     const accessKey = params.get('access');
     const adminKey = params.get('admin');
 
+    let updated = false;
+
+    // 영상 열람 권한 판별
     if (accessKey === SECRET_ACCESS_KEY) {
       localStorage.setItem('hasVideoAccess', 'true');
       setHasVideoAccess(true);
+      updated = true;
+    } else if (localStorage.getItem('hasVideoAccess') === 'true') {
+      setHasVideoAccess(true);
     }
 
+    // 관리자 수정/등록 권한 판별
     if (adminKey === ADMIN_KEY) {
       localStorage.setItem('hasAdminAccess', 'true');
       setHasAdminAccess(true);
+      updated = true;
+    } else if (localStorage.getItem('hasAdminAccess') === 'true') {
+      setHasAdminAccess(true);
     }
 
-    if (accessKey || adminKey) {
+    // 주소창에서 파라미터 흔적 깔끔하게 정리
+    if (updated) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
