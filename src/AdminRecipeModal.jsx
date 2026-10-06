@@ -259,18 +259,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 }}
               >
                 ➕ 영상 추가
-              </button>
-              <button
-                type="button"
-                onClick={handleAiGenerate}
-                disabled={isAiLoading}
-                style={{
-                  backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px',
-                  padding: '3px 10px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap'
-                }}
-              >
-                {isAiLoading ? '⏳ AI 분석 중...' : '🪄 AI 요약/상세 추출'}
-              </button>
+              </button>              
             </div>
           </div>
 
@@ -336,7 +325,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
               />
             </div>
             <div>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>비중 (기준 숫자만)</span>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>비중(기준 숫자만)</span>
               <input
                 type="text"
                 value={formData.spec.specificGravity}
@@ -346,7 +335,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
               />
             </div>
             <div>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>오븐온도 (윗불 / 밑불)</span>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>오븐온도(위/아래)</span>
               <input
                 type="text"
                 value={formData.spec.ovenTemp}
