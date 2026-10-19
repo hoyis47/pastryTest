@@ -1445,66 +1445,6 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenE
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
-    {/* 🛠️ 밑줄 친 도구 모음 영역 */}
-      {extractedTools.length > 0 && (
-        <div style={{
-          backgroundColor: '#ffffff',
-          border: '1.5px solid #bae6fd',
-          borderRadius: '8px',
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          flexWrap: 'wrap',
-          boxSizing: 'border-box'
-        }}>
-          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1', whiteSpace: 'nowrap' }}>
-            🛠️ 준비 도구:
-          </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', flex: 1, alignItems: 'center' }}>
-            {extractedTools.map((tool, tIdx) => (
-              <span
-                key={tIdx}
-                style={{
-                  backgroundColor: '#e0f2fe',
-                  color: '#0369a1',
-                  border: '1px solid #7dd3fc',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11.5px',
-                  fontWeight: 'bold'
-                }}
-              >
-                {tool}
-              </span>
-            ))}
-          </div>
-          {onOpenEquipmentView && (
-            <button
-              type="button"
-              onClick={onOpenEquipmentView}
-              style={{
-                marginLeft: 'auto',
-                backgroundColor: '#f0fdf4',
-                color: '#0f766e',
-                border: '1px solid #86efac',
-                borderRadius: '6px',
-                padding: '4px 8px',
-                fontSize: '11.5px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-              title="전체 준비물 창으로 이동"
-            >
-              📋 전체준비물
-            </button>
-          )}
-        </div>
-      )}
       <div 
         style={{
           display: 'flex',
@@ -3100,6 +3040,53 @@ function App() {
                       </div>
                     </div>
                   )}
+
+                  {/* ✨ 공정 순서 아래로 따로 분리된 슬림 준비 도구 목록 */}
+                  {(() => {
+                    const allText = `${item.summary || ''} ${item.keyPoint ? (Array.isArray(item.keyPoint) ? item.keyPoint.join(' ') : item.keyPoint) : ''} ${item.detail || ''}`;
+                    const tools = [];
+                    const uRegex = /<u>(.*?)<\/u>/gi;
+                    let match;
+                    while ((match = uRegex.exec(allText)) !== null) {
+                      if (match[1]?.trim()) tools.push(match[1].trim());
+                    }
+                    const underRegex = /(?:^|[^\w])_([^_]+)_(?:[^\w]|$)/g;
+                    while ((match = underRegex.exec(allText)) !== null) {
+                      if (match[1]?.trim()) tools.push(match[1].trim());
+                    }
+                    const itemTools = Array.from(new Set(tools));
+
+                    if (itemTools.length === 0) return null;
+
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0 2px',
+                        boxSizing: 'border-box'
+                      }}>
+                        {itemTools.map((tool, tIdx) => (
+                          <span
+                            key={tIdx}
+                            style={{
+                              backgroundColor: '#e0f2fe',
+                              color: '#0369a1',
+                              border: '1px solid #7dd3fc',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11.5px',
+                              fontWeight: '600',
+                              lineHeight: '1.2'
+                            }}
+                          >
+                            {tool}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {mode === 'study' && hasDetail && (
                     <div>
