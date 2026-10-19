@@ -1045,10 +1045,10 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               gap: '6px',
               backgroundColor: '#ffffff',
-              padding: '10px',
+              padding: '10px 8px',
               borderRadius: '10px',
               border: '1.5px solid #bbf7d0',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
@@ -1076,7 +1076,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                         backgroundColor: isExcluded ? '#f8fafc' : (isChecked ? '#f0fdf4' : '#ffffff'),
                         border: isExcluded ? '1px dashed #cbd5e1' : (isChecked ? '1.5px solid #86efac' : '1px solid #cbd5e1'),
                         borderRadius: '8px',
-                        padding: '8px 8px',
+                        padding: '8px 6px',
                         cursor: 'pointer',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
@@ -1084,28 +1084,31 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                         msUserSelect: 'none',
                         WebkitTouchCallout: 'none', // 모바일 롱프레스 시 브라우저 기본 컨텍스트 메뉴 방지
                         transition: 'all 0.15s ease',
-                        opacity: isExcluded ? 0.55 : 1
+                        opacity: isExcluded ? 0.55 : 1,
+                        minWidth: 0,
+                        boxSizing: 'border-box'
                       }}
                       title="터치: 체크 / 0.5초 꾹 누름: 챙길 품목에서 제외 또는 복원"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1 }}>
                         <input
                           type="checkbox"
                           disabled={isExcluded}
                           checked={isChecked}
                           onChange={() => {}}
                           onClick={(e) => e.stopPropagation()}
-                          style={{ cursor: isExcluded ? 'not-allowed' : 'pointer', width: '15px', height: '15px' }}
+                          style={{ cursor: isExcluded ? 'not-allowed' : 'pointer', width: '15px', height: '15px', flexShrink: 0 }}
                         />
                         <span style={{
-                          fontSize: tool.length >= 10 ? '11px' : '12.5px',
+                          fontSize: tool.length >= 10 ? '10.5px' : (tool.length >= 7 ? '11.5px' : '12.5px'),
                           color: isExcluded ? '#94a3b8' : (isChecked ? '#166534' : '#1e293b'),
                           textDecoration: (isExcluded || isChecked) ? 'line-through' : 'none',
                           fontWeight: (isChecked && !isExcluded) ? 'bold' : '500',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          letterSpacing: tool.length >= 10 ? '-0.4px' : 'normal'
+                          letterSpacing: tool.length >= 10 ? '-0.5px' : '-0.2px',
+                          lineHeight: '1.2'
                         }}>
                           {tool}
                         </span>
@@ -1114,13 +1117,15 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                       {/* 미지참(제외) 상태일 때만 은은하게 작게 표시되는 텍스트 배지 */}
                       {isExcluded && (
                         <span style={{
-                          fontSize: '10px',
+                          fontSize: '9.5px',
                           color: '#94a3b8',
                           backgroundColor: '#f1f5f9',
-                          padding: '1px 5px',
+                          padding: '1px 3px',
                           borderRadius: '4px',
                           border: '1px solid #e2e8f0',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          marginLeft: '2px'
                         }}>
                           제외됨
                         </span>
@@ -1178,10 +1183,10 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               gap: '6px',
               backgroundColor: '#ffffff',
-              padding: '10px',
+              padding: '10px 8px',
               borderRadius: '10px',
               border: '1.5px solid #bae6fd',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
@@ -1206,27 +1211,31 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                         backgroundColor: isChecked ? '#f0fdf4' : '#f8fafc',
                         border: isChecked ? '1.5px solid #86efac' : '1px solid #cbd5e1',
                         borderRadius: '8px',
-                        padding: '8px 10px',
+                        padding: '8px 6px',
                         cursor: 'pointer',
                         userSelect: 'none',
-                        transition: 'all 0.15s ease'
+                        transition: 'all 0.15s ease',
+                        minWidth: 0,
+                        boxSizing: 'border-box'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1 }}>
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {}}
-                          style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                          style={{ cursor: 'pointer', width: '15px', height: '15px', flexShrink: 0 }}
                         />
                         <span style={{
-                          fontSize: '12.5px',
+                          fontSize: tool.length >= 10 ? '10.5px' : (tool.length >= 7 ? '11.5px' : '12.5px'),
                           color: isChecked ? '#166534' : '#1e293b',
                           textDecoration: isChecked ? 'line-through' : 'none',
                           fontWeight: isChecked ? 'bold' : '500',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          letterSpacing: tool.length >= 10 ? '-0.5px' : '-0.2px',
+                          lineHeight: '1.2'
                         }}>
                           {tool}
                         </span>
@@ -1245,8 +1254,9 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                             color: '#ef4444',
                             fontSize: '12px',
                             cursor: 'pointer',
-                            padding: '0 4px',
-                            fontWeight: 'bold'
+                            padding: '0 2px',
+                            fontWeight: 'bold',
+                            flexShrink: 0
                           }}
                           title="직접 추가한 항목 삭제"
                         >
