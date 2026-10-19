@@ -824,16 +824,17 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
     });
   };
 
-  // ✨ 길게 누르기(롱프레스, 500ms) 제어용 Ref
+  // ✨ 길게 누르기(롱프레스, 450ms) 제어용 Ref 및 타임스탬프
   const longPressTimerRef = useRef(null);
-  const isLongPressTriggeredRef = useRef(false);
+  const pressStartTimeRef = useRef(0);
+  const lastLongPressTimeRef = useRef(0);
 
   const startLongPress = (toolName) => {
-    isLongPressTriggeredRef.current = false;
+    pressStartTimeRef.current = Date.now();
     longPressTimerRef.current = setTimeout(() => {
-      isLongPressTriggeredRef.current = true;
+      lastLongPressTimeRef.current = Date.now();
       handleToggleQnetInclusion(toolName);
-    }, 500); // 0.5초간 꾹 누르면 지참/미지참 전환
+    }, 450); // 0.45초간 꾹 누르면 지참/미지참 전환
   };
 
   const cancelLongPress = () => {
@@ -841,17 +842,15 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    // 모바일에서 롱프레스 직후 발생하는 onClick 이벤트(체크박스 선택) 방지
-    if (isLongPressTriggeredRef.current) {
-      setTimeout(() => {
-        isLongPressTriggeredRef.current = false;
-      }, 150);
-    }
   };
 
   const handleClickItem = (toolName, isExcluded) => {
-    // 롱프레스가 발동된 상태라면 체크 토글을 완전히 무시
-    if (isLongPressTriggeredRef.current) {
+    // 롱프레스가 실행된 지 800ms 이내에 발생하는 후속 클릭 이벤트는 완전히 차단
+    if (Date.now() - lastLongPressTimeRef.current < 800) {
+      return;
+    }
+    // 실제로 400ms 이상 누르고 있었다면 단순 클릭으로 간주하지 않음
+    if (Date.now() - pressStartTimeRef.current >= 400) {
       return;
     }
     if (!isExcluded) {
