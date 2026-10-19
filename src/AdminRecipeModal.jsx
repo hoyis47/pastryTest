@@ -27,6 +27,8 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [isDetailOpen, setIsDetailOpen] = useState(false); // ✨ 상세과정설명 아코디언 열림/닫힘 상태
+
   useEffect(() => {
     if (targetRecipe) {
       const initialVideos = (targetRecipe.videos && targetRecipe.videos.length > 0)
@@ -210,15 +212,18 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
     }}>
       <div style={{
         backgroundColor: '#ffffff', borderRadius: '14px', width: '100%', maxWidth: '640px',
-        maxHeight: '90vh', overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+        maxHeight: '90vh', padding: '20px', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '10px', flexShrink: 0 }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f766e', margin: 0 }}>
             {formData.id ? `✏️ [${formData.title}] 수정` : '➕ 새 제과 품목 등록'}
           </h2>
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
         </div>
+
+        {/* ✨ 내부 내용만 스크롤되는 독립 스크롤 영역 */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', padding: '10px 4px 10px 0' }}>
 
         {/* 1. 기본 정보 & 유튜브 */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -421,7 +426,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
             </label>
           </div>
           <textarea
-            rows={6}
+            rows={14}
             value={formData.summary}
             onChange={e => setFormData({ ...formData, summary: e.target.value })}
             placeholder="### [1단계] 재료 정리 (재료, 4개그릇)..."
@@ -429,32 +434,57 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
           />
         </div>
 
-        {/* 4. 상세 설명 (detail) 및 공개 토글 */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>
-              📋 상세과정설명 (detail - 마크다운)
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', color: formData.isDetailPublished ? '#16a34a' : '#94a3b8' }}>
-              <input
-                type="checkbox"
-                checked={formData.isDetailPublished}
-                onChange={e => setFormData({ ...formData, isDetailPublished: e.target.checked })}
-              />
-              {formData.isDetailPublished ? '공개됨 🟢' : '비공개(정리중) 🔒'}
-            </label>
+        {/* 4. 상세 설명 (detail) - 아코디언 토글 */}
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+          <div 
+            onClick={() => setIsDetailOpen(!isDetailOpen)}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              backgroundColor: '#f8fafc', 
+              padding: '10px 12px', 
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', color: '#0f766e', fontWeight: 'bold' }}>
+                {isDetailOpen ? '▼' : '▶'}
+              </span>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>
+                📋 상세과정설명 (detail - 필요할 때만 작성)
+              </label>
+            </div>
+            <div onClick={e => e.stopPropagation()}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', color: formData.isDetailPublished ? '#16a34a' : '#94a3b8' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.isDetailPublished}
+                  onChange={e => setFormData({ ...formData, isDetailPublished: e.target.checked })}
+                />
+                {formData.isDetailPublished ? '공개됨 🟢' : '비공개(정리중) 🔒'}
+              </label>
+            </div>
           </div>
-          <textarea
-            rows={8}
-            value={formData.detail}
-            onChange={e => setFormData({ ...formData, detail: e.target.value })}
-            placeholder="[1] 재료 전처리..."
-            style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'monospace', fontSize: '12px', boxSizing: 'border-box' }}
-          />
+          {isDetailOpen && (
+            <div style={{ padding: '10px', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
+              <textarea
+                rows={8}
+                value={formData.detail}
+                onChange={e => setFormData({ ...formData, detail: e.target.value })}
+                placeholder="[1] 재료 전처리..."
+                style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontFamily: 'monospace', fontSize: '12px', boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
         </div>
 
-        {/* 하단 버튼 */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+        </div>
+        {/* ✨ 내부 스크롤 영역 끝 */}
+
+        {/* 하단 버튼 - 스크롤 외부에 배치되어 항상 노출됨 */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px', flexShrink: 0 }}>
           <button
             onClick={onClose}
             style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#fff', cursor: 'pointer', fontSize: '13px' }}
