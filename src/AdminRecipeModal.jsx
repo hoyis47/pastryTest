@@ -426,7 +426,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
             </label>
           </div>
           <textarea
-            rows={14}
+            rows={25}
             value={formData.summary}
             onChange={e => setFormData({ ...formData, summary: e.target.value })}
             placeholder="### [1단계] 재료 정리 (재료, 4개그릇)..."

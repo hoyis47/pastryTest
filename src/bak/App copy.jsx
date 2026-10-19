@@ -1,5 +1,8 @@
+// 기존: import studyList from './studyData.js';
+// 변경: studyData.js는 API 로딩 실패 시 예비용(fallback)으로 두거나 제거
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import studyList from './studyData.js'; // ✨ .js 파일 import
+import fallbackStudyList from './studyData.js';
+import AdminRecipeModal from './AdminRecipeModal.jsx'; // ✨ 모달 파일 import
 
 // ----------------------------------------------------
 // 🎮 [컴포넌트] 스피드 암기 게임 (1회독 완주 & 결과 리포트 구조)
@@ -964,7 +967,12 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const formatGravity = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '-';
-    return text.replace(/\s+/g, '');
+    const clean = text.replace(/\s+/g, '');
+    // ± 기호가 없는데 숫자(예: 0.45, .55 등)만 입력된 경우 ±0.05 자동 부착
+    if (!clean.includes('±') && /^[\d.]+$/.test(clean)) {
+      return `${clean}±0.05`;
+    }
+    return clean;
   };
 
   const renderItemTitle = (title) => {
@@ -1300,27 +1308,81 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 // 🏠 메인 App 컴포넌트
 // ----------------------------------------------------
 function App() {
+  // ✨ 1. DB 연동 데이터 상태 (초기값: fallbackStudyList)
+  const [studyList, setStudyList] = useState(fallbackStudyList);
+
   // 모드: 'study' (공부노트), 'test' (테스트), 'list' (전체 리스트), 'game' (게임)
   const [mode, setMode] = useState('study');
   const [hiddenState, setHiddenState] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [hasVideoAccess, setHasVideoAccess] = useState(false);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const SECRET_ACCESS_KEY = 'cookie2026';
+  const ADMIN_KEY = 'hoyang';
+
+  // ✨ 2. 관리자 모달 제어 상태
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [editTargetRecipe, setEditTargetRecipe] = useState(null);
+
+  // 📡 DB에서 전체 품목 불러오기
+  const fetchRecipesFromDB = async () => {
+    try {
+      const res = await fetch('/api/recipes');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          // 배운 순서(id 오름차순)대로 정렬
+          const sortedData = [...data].sort((a, b) => Number(a.id) - Number(b.id));
+          setStudyList(data);
+        }
+      }
+    } catch (err) {
+      console.warn('DB 연결 실패, fallback 데이터 유지:', err);
+    }
+  };
 
   useEffect(() => {
-    const isVip = localStorage.getItem('hasVideoAccess') === 'true';
-    if (isVip) {
-      setHasVideoAccess(true);
-      return;
+    fetchRecipesFromDB(); // 앱 로딩 시 DB에서 데이터 패치
+  }, []);
+
+  // 🔑 관리자 권한 확인 후 모달 오픈 (hasAdminAccess 상태 활용)
+  const handleOpenAdminModal = (target = null) => {
+    if (hasAdminAccess) {
+      setEditTargetRecipe(target);
+      setIsAdminModalOpen(true);
     }
+  };
 
-    const params = new URLSearchParams(window.location.search);
+  useEffect(() => {
+    // 1. URL 쿼리 파라미터 확인 (search 및 href 전체에서 안전 추출)
+    const searchStr = window.location.search || (window.location.href.includes('?') ? '?' + window.location.href.split('?')[1] : '');
+    const params = new URLSearchParams(searchStr);
     const accessKey = params.get('access');
+    const adminKey = params.get('admin');
 
+    let updated = false;
+
+    // 영상 열람 권한 판별
     if (accessKey === SECRET_ACCESS_KEY) {
       localStorage.setItem('hasVideoAccess', 'true');
       setHasVideoAccess(true);
+      updated = true;
+    } else if (localStorage.getItem('hasVideoAccess') === 'true') {
+      setHasVideoAccess(true);
+    }
+
+    // 관리자 수정/등록 권한 판별
+    if (adminKey === ADMIN_KEY) {
+      localStorage.setItem('hasAdminAccess', 'true');
+      setHasAdminAccess(true);
+      updated = true;
+    } else if (localStorage.getItem('hasAdminAccess') === 'true') {
+      setHasAdminAccess(true);
+    }
+
+    // 주소창에서 파라미터 흔적 깔끔하게 정리
+    if (updated) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -1351,34 +1413,48 @@ function App() {
     }));
   };
 
+  // ---------------- [수정 후] ----------------
   const getEmbedUrl = (url) => {
     if (!url) return '';
-    let videoId = '';
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } else if (url.includes('watch?v=')) {
-      videoId = url.split('watch?v=')[1]?.split('&')[0];
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    const cleanUrl = String(url).trim();
+    // 이미 embed 형태인 경우 그대로 반환
+    if (cleanUrl.includes('youtube.com/embed/')) return cleanUrl;
+
+    // watch?v=, youtu.be/, shorts/, embed/ 등 다양한 형태에서 11자리 비디오 ID 추출
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/;
+    const match = cleanUrl.match(regExp);
+
+    return match && match[1] ? `https://www.youtube.com/embed/${match[1]}` : cleanUrl;
   };
+  // -------------------------------------------
 
   const parseSpecificGravity = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return null;
-    const match = text.match(/^([\d.]+)\s*[±]\s*([\d.]+)/);
+    const raw = String(text).trim();
+
+    // 1. 이미 "0.55 ± 0.05" 형식인 경우
+    const match = raw.match(/^([\d.]+)\s*[±]\s*([\d.]+)/);
     if (match) {
       const center = parseFloat(match[1]);
       const range = parseFloat(match[2]);
-      const minVal = (center - range).toFixed(2);
-      const maxVal = (center + range).toFixed(2);
       return {
         coreVal: match[1],
-        restText: ` ± ${match[2]} (${minVal} ~ ${maxVal})`
+        restText: ` ± ${match[2]} (${(center - range).toFixed(2)} ~ ${(center + range).toFixed(2)})`
       };
     }
-    return {
-      coreVal: text,
-      restText: ''
-    };
+
+    // 2. "0.55" 처럼 기준 숫자만 입력된 경우 -> ± 0.05 및 실제 계산 범위 자동 생성
+    const singleNum = parseFloat(raw);
+    if (!isNaN(singleNum)) {
+      const minVal = (singleNum - 0.05).toFixed(2);
+      const maxVal = (singleNum + 0.05).toFixed(2);
+      return {
+        coreVal: raw,
+        restText: ` ± 0.05 (${minVal} ~ ${maxVal})`
+      };
+    }
+
+    return { coreVal: raw, restText: '' };
   };
 
   const renderPlainText = (textData) => {
@@ -1567,6 +1643,35 @@ function App() {
     );
   };
 
+  // 온도 포맷터: "20" -> "20℃"
+  const displayTemp = (t) => {
+    if (!t || t.trim() === '-' || t.trim() === '') return '-';
+    const clean = String(t).replace(/℃/g, '').trim();
+    return clean ? `${clean}℃` : '-';
+  };
+
+  // 오븐온도 포맷터: "180 / 160" -> "180℃ / 160℃", "180 ~ 160" -> "180℃ ~ 160℃"
+  const displayOven = (o) => {
+    if (!o || o.trim() === '-' || o.trim() === '') return '레시피 참조';
+    let clean = String(o).replace(/℃/g, '').trim();
+    if (clean.includes('/')) {
+      const [up, down] = clean.split('/').map(v => v.trim());
+      return `${up}℃ / ${down}℃`;
+    }
+    if (clean.includes('~')) {
+      const [up, down] = clean.split('~').map(v => v.trim());
+      return `${up}℃ ~ ${down}℃`;
+    }
+    return `${clean}℃`;
+  };
+
+  // 굽기시간 포맷터: "25" -> "25분", "25~30" -> "25~30분"
+  const displayTime = (b) => {
+    if (!b || b.trim() === '-' || b.trim() === '') return '레시피 참조';
+    const clean = String(b).replace(/분/g, '').trim();
+    return `${clean}분`;
+  };
+
   const gravityData = parseSpecificGravity(currentItem?.spec?.specificGravity);
 
   return (
@@ -1602,6 +1707,27 @@ function App() {
 
         {/* 상단 4대 탭 */}
         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+
+          {hasAdminAccess && (
+            <button 
+              onClick={() => handleOpenAdminModal(null)}
+              style={{ 
+                padding: '7px 10px', 
+                borderRadius: '8px', 
+                border: '1px solid #cbd5e1', 
+                backgroundColor: '#f8fafc', 
+                color: '#0f766e', 
+                fontWeight: 'bold', 
+                cursor: 'pointer', 
+                fontSize: '12px' 
+              }}
+              title="새 제과 품목 등록"
+            >
+              ⚙ 새 품목 등록
+            </button>
+          )}
+
+
           <button 
             onClick={() => setMode('study')}
             style={{ 
@@ -1670,6 +1796,8 @@ function App() {
           >
             🎮 게임
           </button>
+
+          
         </div>
       </div>
 
@@ -1784,12 +1912,13 @@ function App() {
                 ◀
               </button>
 
-              <div style={{ flex: 1, minWidth: 0, padding: '0 4px', textAlign: 'center' }}>
+              <div style={{ flex: 1, minWidth: 0, padding: '0 4px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                 <select
                   value={currentIndex}
                   onChange={(e) => changeItem(Number(e.target.value))}
                   style={{
-                    width: '100%',
+                    flex: 1,
+                    maxWidth: '85%',
                     padding: '6px 4px',
                     border: 'none',
                     backgroundColor: 'transparent',
@@ -1808,6 +1937,25 @@ function App() {
                     </option>
                   ))}
                 </select>
+
+                {hasAdminAccess && (
+                  <button
+                    onClick={() => handleOpenAdminModal(currentItem)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      color: '#0f766e',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '0 4px',
+                      flexShrink: 0
+                    }}
+                    title="현재 품목 스펙 및 설명 수정"
+                  >
+                    수정
+                  </button>
+                )}
               </div>
 
               <button
@@ -1843,20 +1991,43 @@ function App() {
                 width: '100%', 
                 boxSizing: 'border-box' 
               }}>
+                {/* 1. 반죽 방법 (복구 완료) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 방법</div>
                   <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {item.spec.mixingMethod}
+                    {item.spec.mixingMethod || '-'}
                   </div>
                 </div>
 
+                {/* 2. 반죽 온도 (숫자만 있어도 ℃ 자동 부착 + 핸드폰용 초소형 시험시간 배지) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
-                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 온도</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>반죽 온도</span>
+                    {item.category && (
+                      <span
+                        style={{
+                          backgroundColor: '#dcfce7',
+                          color: '#166534',
+                          border: '1px solid #86efac',
+                          borderRadius: '4px',
+                          padding: '0 4px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          lineHeight: '1.4',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={`시험시간: ${item.category}`}
+                      >
+                        ⏱️{item.category}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {item.spec.doughTemp}
+                    {displayTemp(item.spec.doughTemp)}
                   </div>
                 </div>
 
+                {/* 3. 비중 (0.55만 있어도 ±0.05 및 계산식 자동 생성, '-'인 품목은 안 보임) */}
                 {gravityData && (
                   <div style={{ gridColumn: 'span 2', backgroundColor: '#f5f3ff', padding: '12px', borderRadius: '8px', border: '1px solid #ddd6fe', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{ fontSize: '12px', color: '#6d28d9', fontWeight: 'bold' }}>⚖️ 비중 (기준)</div>
@@ -1873,20 +2044,23 @@ function App() {
                   </div>
                 )}
 
+                {/* 4. 오븐 온도 (190 / 130 입력 시 190℃ / 130℃ 자동 부착) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>오븐 온도</div>
                   <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {item.spec.ovenTemp || '레시피 참조'}
+                    {displayOven(item.spec.ovenTemp)}
                   </div>
                 </div>
 
+                {/* 5. 굽기 시간 (10 ~ 12 또는 25 입력 시 '분' 자동 부착) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>굽기 시간</div>
                   <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {item.spec.bakingTime || '레시피 참조'}
+                    {displayTime(item.spec.bakingTime)}
                   </div>
                 </div>
 
+                {/* 6. 주의사항 */}
                 {hasNote && (
                   <div style={{ gridColumn: 'span 2', backgroundColor: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fef3c7', minWidth: 0, boxSizing: 'border-box' }}>
                     <div style={{ fontSize: '12px', color: '#b45309', fontWeight: 'bold' }}>⚡ 주의사항</div>
@@ -2145,6 +2319,14 @@ function App() {
           </div>
         );
       })()}
+      {/* ✨ 새로 추가: 관리자 등록/수정 모달 컴포넌트 */}
+      <AdminRecipeModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        targetRecipe={editTargetRecipe}
+        onSaved={fetchRecipesFromDB}
+        secretKey={SECRET_ACCESS_KEY}
+      />
     </div>
   );
 }
