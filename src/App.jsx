@@ -2466,27 +2466,20 @@ function App() {
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
-            <button
-              type="button"
-              onClick={handleAdminToggle}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '15px',
-                color: hasAdminAccess ? '#0f766e' : '#cbd5e1',
-                padding: '2px 4px',
-                borderRadius: '4px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                lineHeight: 1
-              }}
-              title={hasAdminAccess ? '관리자 모드 활성화됨 (클릭 시 로그아웃)' : '관리자 인증 (비밀번호 입력)'}
-            >
-              ⚙️
-            </button>
+            <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>
+              <span
+                onClick={handleAdminToggle}
+                style={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  display: 'inline-block'
+                }}
+              >
+                🥐
+              </span>
+              {' '}제과기능사 공부노트
+            </h1>
           </div>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
             우리 모두 합격까지 힘내보아요! 🍀
