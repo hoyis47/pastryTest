@@ -841,12 +841,17 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
+    // 모바일에서 롱프레스 직후 발생하는 onClick 이벤트(체크박스 선택) 방지
+    if (isLongPressTriggeredRef.current) {
+      setTimeout(() => {
+        isLongPressTriggeredRef.current = false;
+      }, 150);
+    }
   };
 
   const handleClickItem = (toolName, isExcluded) => {
-    // 롱프레스가 발동된 터치/클릭 종료 시에는 일반 체크 토글을 건너뜀
+    // 롱프레스가 발동된 상태라면 체크 토글을 완전히 무시
     if (isLongPressTriggeredRef.current) {
-      isLongPressTriggeredRef.current = false;
       return;
     }
     if (!isExcluded) {
@@ -1090,6 +1095,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                           disabled={isExcluded}
                           checked={isChecked}
                           onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
                           style={{ cursor: isExcluded ? 'not-allowed' : 'pointer', width: '15px', height: '15px' }}
                         />
                         <span style={{
