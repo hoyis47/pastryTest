@@ -1039,16 +1039,16 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
             }}>
               <span>💡</span>
               <span>
-                안 가져갈 품목은 <b>카드를 0.5초간 꾹 길게 누르면</b> 제외/복원됩니다.
+                안 가져갈 <b>항목을 0.5초간 꾹 길게 누르면</b> 제외/복원됨
               </span>
             </div>
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '8px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '6px',
               backgroundColor: '#ffffff',
-              padding: '12px',
+              padding: '10px',
               borderRadius: '10px',
               border: '1.5px solid #bbf7d0',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
@@ -1076,7 +1076,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                         backgroundColor: isExcluded ? '#f8fafc' : (isChecked ? '#f0fdf4' : '#ffffff'),
                         border: isExcluded ? '1px dashed #cbd5e1' : (isChecked ? '1.5px solid #86efac' : '1px solid #cbd5e1'),
                         borderRadius: '8px',
-                        padding: '9px 12px',
+                        padding: '8px 8px',
                         cursor: 'pointer',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
@@ -1178,10 +1178,10 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '8px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '6px',
               backgroundColor: '#ffffff',
-              padding: '12px',
+              padding: '10px',
               borderRadius: '10px',
               border: '1.5px solid #bae6fd',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
