@@ -711,7 +711,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
 
     text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
 
-    const rawBlocks = text.split(/(?=###\s+|(?<=\n)\[\d+단계\])/g).filter(b => b.trim());
+    const rawBlocks = text.split(/(?=###\s+|(?<=\n)\[\d+(?:단계)?\])/g).filter(b => b.trim());
 
     if (rawBlocks.length === 0) return [];
 
