@@ -917,7 +917,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
             whiteSpace: 'nowrap'
           }}
         >
-          📋 전체 체크리스트 ({checkedTotalCount}/{totalCount})
+          📋 전체 리스트 ({checkedTotalCount}/{totalCount})
         </button>
         <button
           type="button"
@@ -938,7 +938,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
             whiteSpace: 'nowrap'
           }}
         >
-          🥐 제품별 준비물 (총{studyList.length}개 제품)
+          🥐 제품별 준비물 
         </button>
       </div>
 
@@ -960,7 +960,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '12px' }}>📌</span>
               <span style={{ fontSize: '12px',  color: '#166534' }}>
-                큐넷 제과기능사 공식 수험자 지참준비물
+                큐넷 공식 수험자 지참준비물
               </span>
             </div>
             <a
@@ -1059,6 +1059,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                       onMouseLeave={cancelLongPress}
                       onTouchStart={() => startLongPress(tool)}
                       onTouchEnd={cancelLongPress}
+                      onContextMenu={(e) => e.preventDefault()}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1069,6 +1070,9 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                         padding: '9px 12px',
                         cursor: 'pointer',
                         userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        MozUserSelect: 'none',
+                        msUserSelect: 'none',
                         WebkitTouchCallout: 'none', // 모바일 롱프레스 시 브라우저 기본 컨텍스트 메뉴 방지
                         transition: 'all 0.15s ease',
                         opacity: isExcluded ? 0.55 : 1
