@@ -720,7 +720,9 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       const firstLine = lines[0].replace(/^###\s+/, '').trim();
 
       const match = firstLine.match(/\[(.*?)\]\s*(.*)/);
-      const badge = match ? match[1] : `${idx + 1}단계`;
+      let rawBadge = match ? match[1] : `${idx + 1}단계`;
+      // [1] 형태일 경우 [1단계]로 자동 확장
+      const badge = /^\d+$/.test(rawBadge.trim()) ? `${rawBadge.trim()}단계` : rawBadge;
       let title = match ? (match[2] || '공정') : firstLine;
       const body = lines.slice(1).join('\n').trim();
 
@@ -746,6 +748,26 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
     });
   }, [contentData]);
 
+  // 본문 전체에서 <u>도구</u> 또는 _도구_ 형식으로 밑줄 친 단어 자동 추출 및 중복 제거
+  const extractedTools = useMemo(() => {
+    if (!contentData) return [];
+    let text = Array.isArray(contentData)
+      ? contentData.map(item => (typeof item === 'string' ? item : item.text)).join('\n')
+      : String(contentData);
+
+    const tools = [];
+    const uRegex = /<u>(.*?)<\/u>/gi;
+    let match;
+    while ((match = uRegex.exec(text)) !== null) {
+      if (match[1]?.trim()) tools.push(match[1].trim());
+    }
+    const underRegex = /(?:^|[^\w])_([^_]+)_(?:[^\w]|$)/g;
+    while ((match = underRegex.exec(text)) !== null) {
+      if (match[1]?.trim()) tools.push(match[1].trim());
+    }
+    return Array.from(new Set(tools));
+  }, [contentData]);
+
   useEffect(() => {
     setActiveStep(0);
   }, [contentData, mode, itemId]);
@@ -769,6 +791,42 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
+    {/* 🛠️ 밑줄 친 도구 모음 영역 */}
+      {extractedTools.length > 0 && (
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1.5px solid #bae6fd',
+          borderRadius: '8px',
+          padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          boxSizing: 'border-box'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1', whiteSpace: 'nowrap' }}>
+            🛠️ 준비 도구:
+          </span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {extractedTools.map((tool, tIdx) => (
+              <span
+                key={tIdx}
+                style={{
+                  backgroundColor: '#e0f2fe',
+                  color: '#0369a1',
+                  border: '1px solid #7dd3fc',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11.5px',
+                  fontWeight: 'bold'
+                }}
+              >
+                {tool}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <div 
         style={{
           display: 'flex',
@@ -1469,15 +1527,30 @@ function App() {
     text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
     const lines = text.split('\n');
 
-    const formatInlineBold = (content) => {
-      const parts = content.split(/(\*\*.*?\*\*)/g);
-      return parts.map((part, i) => {
+    // 커스텀 마크다운 인라인 파서: **강조**, ~취소~, ::주황색::, ==배경색==, <u>밑줄</u>, _밑줄_
+    const formatCustomMarkdown = (content) => {
+      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|(?:^|[^\w])_[^_]+_(?:[^\w]|$))/g;
+      const parts = content.split(regex);
+
+      return parts.filter(Boolean).map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return (
-            <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>
-              {part.slice(2, -2)}
-            </strong>
-          );
+          return <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('~') && part.endsWith('~')) {
+          return <span key={i} style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{part.slice(1, -1)}</span>;
+        }
+        if (part.startsWith('::') && part.endsWith('::')) {
+          return <span key={i} style={{ color: '#ea580c', fontWeight: 'bold' }}>{part.slice(2, -2)}</span>;
+        }
+        if (part.startsWith('==') && part.endsWith('==')) {
+          return <mark key={i} style={{ backgroundColor: '#fef08a', color: '#713f12', padding: '1px 3px', borderRadius: '3px' }}>{part.slice(2, -2)}</mark>;
+        }
+        if (part.startsWith('<u>') && part.endsWith('</u>')) {
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(3, -4)}</u>;
+        }
+        const trimUnder = part.trim();
+        if (trimUnder.startsWith('_') && trimUnder.endsWith('_') && trimUnder.length > 2) {
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{trimUnder.slice(1, -1)}</u>;
         }
         return part;
       });
@@ -1526,7 +1599,7 @@ function App() {
                 }}
               >
                 <span>📌</span>
-                <span>{formatInlineBold(cleanTitle)}</span>
+                <span>{formatCustomMarkdown(cleanTitle)}</span>
               </div>
             );
           }
@@ -1548,7 +1621,7 @@ function App() {
                 }}
               >
                 <span>▫️</span>
-                <span>{formatInlineBold(cleanSubTitle)}</span>
+                <span>{formatCustomMarkdown(cleanSubTitle)}</span>
               </div>
             );
           }
@@ -1568,7 +1641,7 @@ function App() {
                   margin: '4px 0' 
                 }}
               >
-                {formatInlineBold(line)}
+                {formatCustomMarkdown(line)}
               </div>
             );
           }
@@ -1589,7 +1662,7 @@ function App() {
                   margin: '2px 0 4px 6px' 
                 }}
               >
-                {formatInlineBold(quoteContent)}
+                {formatCustomMarkdown(quoteContent)}
               </div>
             );
           }
@@ -1598,6 +1671,7 @@ function App() {
           const isNumbered = /^\d+\.\s+/.test(line);
 
           if (isBullet || isNumbered) {
+            // 문장 앞 '- ' 또는 '* '를 점(•) 기호로 변환
             const bulletPrefix = isNumbered ? line.match(/^\d+\./)[0] : '•';
             const cleanContent = line.replace(/^([-*]|\d+\.)\s+/, '');
 
@@ -1618,7 +1692,7 @@ function App() {
                   {bulletPrefix}
                 </span>
                 <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                  {formatInlineBold(cleanContent)}
+                  {formatCustomMarkdown(cleanContent)}
                 </span>
               </div>
             );
@@ -1635,7 +1709,7 @@ function App() {
                 overflowWrap: 'anywhere' 
               }}
             >
-              {formatInlineBold(line)}
+              {formatCustomMarkdown(line)}
             </div>
           );
         })}

@@ -434,6 +434,12 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
           />
         </div>
 
+        {/* 마크다운 작성 규칙 안내 (한 줄) */}
+        <div style={{ fontSize: '11px', color: '#64748b', backgroundColor: '#f1f5f9', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+          <span style={{ fontWeight: 'bold', color: '#0f766e', flexShrink: 0 }}>💡 마크다운:</span>
+          <span><b>**굵게**</b> | <u>_도구밑줄_</u> | <span style={{ color: '#ea580c' }}>::주황색::</span> | <mark style={{ backgroundColor: '#fef08a', padding: '0 2px' }}>==배경색==</mark> | <span style={{ textDecoration: 'line-through' }}>~취소선~</span> | --- (구분선) | - (점변환)</span>
+        </div>
+
         {/* 4. 상세 설명 (detail) - 아코디언 토글 */}
         <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
           <div 
