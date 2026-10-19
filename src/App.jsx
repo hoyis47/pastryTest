@@ -2090,6 +2090,27 @@ function App() {
     }
   };
 
+  // ⚙️ 제목 옆 톱니바퀴를 눌러 admin=hoyang 인증 토글 함수
+  const handleAdminToggle = () => {
+    if (hasAdminAccess) {
+      if (window.confirm('관리자 모드를 종료하시겠습니까?')) {
+        localStorage.removeItem('hasAdminAccess');
+        setHasAdminAccess(false);
+        alert('관리자 모드가 해제되었습니다.');
+      }
+      return;
+    }
+
+    const inputPw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (inputPw === ADMIN_KEY) {
+      localStorage.setItem('hasAdminAccess', 'true');
+      setHasAdminAccess(true);
+      alert('관리자 인증이 완료되었습니다! 등록 및 수정 버튼이 활성화됩니다.');
+    } else if (inputPw !== null) {
+      alert('비밀번호가 올바르지 않습니다.');
+    }
+  };
+
   useEffect(() => {
     // 1. URL 쿼리 파라미터 확인 (search 및 href 전체에서 안전 추출)
     const searchStr = window.location.search || (window.location.href.includes('?') ? '?' + window.location.href.split('?')[1] : '');
@@ -2504,7 +2525,29 @@ function App() {
         paddingBottom: '14px' 
       }}>
         <div>
-          <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
+            <button
+              type="button"
+              onClick={handleAdminToggle}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '15px',
+                color: hasAdminAccess ? '#0f766e' : '#cbd5e1',
+                padding: '2px 4px',
+                borderRadius: '4px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1
+              }}
+              title={hasAdminAccess ? '관리자 모드 활성화됨 (클릭 시 로그아웃)' : '관리자 인증 (비밀번호 입력)'}
+            >
+              ⚙️
+            </button>
+          </div>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
             우리 모두 합격까지 힘내보아요! 🍀
           </p>
