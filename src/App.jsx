@@ -996,22 +996,27 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                 </span>
               </div>
 
-              {/* 가져갈 것만 보기 필터 버튼 */}
+              {/* 가져갈 것만 보기 필터 버튼 (동작형 버튼 스타일 적용) */}
               <button
                 type="button"
                 onClick={() => setOnlyIncludedQnet(!onlyIncludedQnet)}
                 style={{
-                  backgroundColor: onlyIncludedQnet ? '#e0f2fe' : '#ffffff',
-                  color: onlyIncludedQnet ? '#0369a1' : '#64748b',
-                  border: onlyIncludedQnet ? '1px solid #38bdf8' : '1px solid #cbd5e1',
-                  borderRadius: '6px',
-                  padding: '3px 8px',
-                  fontSize: '11px',
+                  backgroundColor: onlyIncludedQnet ? '#0f766e' : '#ffffff',
+                  color: onlyIncludedQnet ? '#ffffff' : '#0f766e',
+                  border: onlyIncludedQnet ? '1.5px solid #0f766e' : '1.5px solid #86efac',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  fontSize: '11.5px',
                   fontWeight: 'bold',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: onlyIncludedQnet ? '0 2px 5px rgba(15, 118, 110, 0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}
               >
-                {onlyIncludedQnet ? '👀 챙길 품목만 보는 중' : '📑 전체 24개 보는 중'}
+                {onlyIncludedQnet ? '📑 전체 24개 보기' : '👀 챙길 것만 보기'}
               </button>
             </div>
 
