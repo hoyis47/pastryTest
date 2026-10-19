@@ -1529,7 +1529,7 @@ function App() {
 
     // 커스텀 마크다운 인라인 파서: **강조**, ~취소~, ::주황색::, ==배경색==, <u>밑줄</u>, _밑줄_
     const formatCustomMarkdown = (content) => {
-      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|(?:^|[^\w])_[^_]+_(?:[^\w]|$))/g;
+      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|_[^_\n]+_)/g;
       const parts = content.split(regex);
 
       return parts.filter(Boolean).map((part, i) => {
@@ -1548,9 +1548,8 @@ function App() {
         if (part.startsWith('<u>') && part.endsWith('</u>')) {
           return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(3, -4)}</u>;
         }
-        const trimUnder = part.trim();
-        if (trimUnder.startsWith('_') && trimUnder.endsWith('_') && trimUnder.length > 2) {
-          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{trimUnder.slice(1, -1)}</u>;
+        if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(1, -1)}</u>;
         }
         return part;
       });
