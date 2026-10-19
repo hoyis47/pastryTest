@@ -2519,7 +2519,7 @@ function App() {
               }}
               title="새 제과 품목 등록"
             >
-              ⚙ 새 품목 등록
+              ⚙ 등록
             </button>
           )}
 
@@ -2537,7 +2537,7 @@ function App() {
               fontSize: '12px' 
             }}
           >
-            📖 공부노트
+            📖 공부
           </button>
           
           <button 
@@ -2573,7 +2573,7 @@ function App() {
               boxShadow: mode === 'list' ? '0 2px 5px rgba(15, 118, 110, 0.25)' : 'none'
             }}
           >
-            📋 전체 리스트
+            📋 총정리
           </button>
 
           <button 
