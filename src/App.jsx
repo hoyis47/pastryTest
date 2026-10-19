@@ -1625,6 +1625,60 @@ function App() {
             );
           }
 
+          // 느낌표(!)로 시작하는 연속된 주의사항들을 하나의 박스 안에 묶어 표시
+          if (/^!\s*/.test(line)) {
+            // 이전 줄도 느낌표였다면 이미 묶음 박스 안에 포함되었으므로 중복 렌더링 방지
+            const prevLine = idx > 0 ? lines[idx - 1].trim() : '';
+            if (/^!\s*/.test(prevLine)) {
+              return null;
+            }
+
+            // 현재 줄부터 연속된 모든 느낌표 주의사항 줄 수집
+            const cautionLines = [];
+            for (let i = idx; i < lines.length; i++) {
+              const cur = lines[i].trim();
+              if (/^!\s*/.test(cur)) {
+                cautionLines.push(cur.replace(/^!\s*/, ''));
+              } else {
+                break;
+              }
+            }
+
+            return (
+              <div 
+                key={idx} 
+                style={{ 
+                  backgroundColor: '#fffbeb', 
+                  border: '1px solid #fde68a', 
+                  borderLeft: '4px solid #f59e0b', 
+                  padding: '7px 10px', 
+                  borderRadius: '6px', 
+                  fontSize: '12.5px', 
+                  color: '#92400e', 
+                  lineHeight: '1.55', 
+                  margin: '4px 0',
+                  boxShadow: '0 1px 2px rgba(245, 158, 11, 0.05)'
+                }}
+              >
+                {cautionLines.length === 1 ? (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+                    <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+                    <span>{formatCustomMarkdown(cautionLines[0])}</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {cautionLines.map((cLine, cIdx) => (
+                      <div key={cIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+                        <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+                        <span>{formatCustomMarkdown(cLine)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           if (/^(💡|주의:|tip:|\[주의\]|\[팁\])/i.test(line)) {
             return (
               <div 
