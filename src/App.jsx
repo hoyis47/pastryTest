@@ -1623,6 +1623,8 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenE
 function AllItemListView({ studyList, onSelectRecipe }) {
   const [activeCategory, setActiveCategory] = useState('반죽법');
 
+  const [showNotes, setShowNotes] = useState(false); // ✨ 주의사항 표시 토글 상태 (기본: 숨김)
+
   const formatTemp = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '';
     const match = text.match(/\d+/);
@@ -1861,6 +1863,23 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                           <span style={{ color: '#1e293b', fontWeight: '600' }}>{time}</span>
                         </div>
                       </div>
+                    {showNotes && item.spec?.note && item.spec.note.trim() !== '' && (
+                        <div style={{ 
+                          borderTop: '1px dashed #fde68a', 
+                          paddingTop: '5px', 
+                          marginTop: '3px' 
+                        }}>
+                          <span style={{ 
+                            color: '#92400e', 
+                            fontSize: '11px', 
+                            lineHeight: '1.4', 
+                            wordBreak: 'break-all',
+                            display: 'block'
+                          }}>
+                            {item.spec.note}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -1917,9 +1936,37 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         })}
       </div>
 
-      <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span>💡</span>
-        <span>품목명을 누르면 공부노트로 이동합니다.</span>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        flexWrap: 'wrap', 
+        gap: '6px' 
+      }}>
+        <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span>💡</span>
+          <span>품목명을 누르면 공부노트로 이동</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowNotes(!showNotes)}
+          style={{
+            backgroundColor: showNotes ? '#fef3c7' : '#ffffff',
+            color: showNotes ? '#92400e' : '#64748b',
+            border: showNotes ? '1px solid #facc15' : '1px solid #cbd5e1',
+            borderRadius: '6px',
+            padding: '3px 8px',
+            fontSize: '11.5px',
+            fontWeight: showNotes ? 'bold' : 'normal',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          {showNotes ? '⚡ 주의사항 숨김' : '⚡ 주의사항 보기'}
+        </button>
       </div>
 
       {activeCategory === '반죽법' && (
@@ -2480,6 +2527,25 @@ function App() {
                 🥐
               </span>
               {' '}제과기능사 공부노트
+              {hasAdminAccess && (
+                <button
+                  type="button"
+                  onClick={fetchRecipesFromDB}
+                  style={{
+                    marginLeft: '8px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    padding: '2px 4px',
+                    verticalAlign: 'middle',
+                    lineHeight: 1
+                  }}
+                  title="DB 새로고침"
+                >
+                  🔄
+                </button>
+              )}
             </h1>
           </div>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
