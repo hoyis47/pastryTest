@@ -789,7 +789,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
       while ((match = uRegex.exec(text)) !== null) {
         if (match[1]?.trim()) tools.push(match[1].trim());
       }
-      const underRegex = /(?:^|[^\w])_([^_]+)_(?:[^\w]|$)/g;
+      const underRegex = /_([^_]+)_/g;
       while ((match = underRegex.exec(text)) !== null) {
         if (match[1]?.trim()) tools.push(match[1].trim());
       }
@@ -1415,7 +1415,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenE
     while ((match = uRegex.exec(text)) !== null) {
       if (match[1]?.trim()) tools.push(match[1].trim());
     }
-    const underRegex = /(?:^|[^\w])_([^_]+)_(?:[^\w]|$)/g;
+    const underRegex = /_([^_]+)_/g;
     while ((match = underRegex.exec(text)) !== null) {
       if (match[1]?.trim()) tools.push(match[1].trim());
     }
@@ -2168,7 +2168,7 @@ function App() {
 
     // 커스텀 마크다운 인라인 파서: **강조**, ~취소~, ::주황색::, ==배경색==, <u>밑줄</u>, _밑줄_
     const formatCustomMarkdown = (content) => {
-      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|_[^_\n]+_)/g;
+      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|_[^_]+_)/g;
       const parts = content.split(regex);
 
       return parts.filter(Boolean).map((part, i) => {
@@ -2203,7 +2203,8 @@ function App() {
             return <div key={idx} style={{ height: '8px' }} />;
           }
 
-          if (/^---+$/.test(line)) {
+          // 일반 대시(-), 언더바(_), 특수 대시(—, –)가 공백 포함 2개 이상 조합되어 줄 전체를 이룰 때 구분선 처리
+          if (/^[\s\-_—–~*]{2,}$/.test(line) && /[\-_—–]/.test(line)) {
             return (
               <div 
                 key={idx} 
@@ -3043,7 +3044,7 @@ function App() {
                     while ((match = uRegex.exec(allText)) !== null) {
                       if (match[1]?.trim()) tools.push(match[1].trim());
                     }
-                    const underRegex = /(?:^|[^\w])_([^_]+)_(?:[^\w]|$)/g;
+                    const underRegex = /_([^_]+)_/g;
                     while ((match = underRegex.exec(allText)) !== null) {
                       if (match[1]?.trim()) tools.push(match[1].trim());
                     }
