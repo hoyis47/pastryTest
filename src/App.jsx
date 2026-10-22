@@ -1275,9 +1275,12 @@ function EquipmentListView({ studyList, onSelectRecipe, onSelectRecipeWithTool }
       {/* 2. 제품(품목)별 준비물 화면 */}
       {activeSubTab === 'byItem' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>💡</span>
-            <span>품목명을 누르면 해당 품목의 공부노트로 이동합니다.</span>
+          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+            <span style={{ lineHeight: '1.4' }}>💡</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.4' }}>
+              <span>품목명을 누르면 해당 노트로 이동</span>
+              <span>준비물을 누르면 해당 노트로 이동</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
