@@ -2557,25 +2557,28 @@ function App() {
     return clean ? `${clean}℃` : '-';
   };
 
-  // 오븐온도 포맷터: "180 / 160" -> "180℃ / 160℃", "180 ~ 160" -> "180℃ ~ 160℃"
+  // 오븐온도 포맷터: 기호 정리 후 구분자(/, ->) 주변에 널널한 공백 유지 및 맨 끝에만 ℃ 표기
   const displayOven = (o) => {
     if (!o || o.trim() === '-' || o.trim() === '') return '레시피 참조';
-    let clean = String(o).replace(/℃/g, '').trim();
-    if (clean.includes('/')) {
-      const [up, down] = clean.split('/').map(v => v.trim());
-      return `${up}℃ / ${down}℃`;
-    }
-    if (clean.includes('~')) {
-      const [up, down] = clean.split('~').map(v => v.trim());
-      return `${up}℃ ~ ${down}℃`;
-    }
+    const clean = String(o)
+      .replace(/℃/g, '')
+      .replace(/\s*\/\s*/g, ' / ')
+      .replace(/\s*->\s*/g, ' -> ')
+      .replace(/\s*→\s*/g, ' -> ')
+      .replace(/\s*~\s*/g, ' ~ ')
+      .trim();
     return `${clean}℃`;
   };
 
-  // 굽기시간 포맷터: "25" -> "25분", "25~30" -> "25~30분"
+  // 굽기시간 포맷터: 기호 정리 후 구분자(~, ->) 주변에 널널한 공백 유지 및 맨 끝에만 분 표기
   const displayTime = (b) => {
     if (!b || b.trim() === '-' || b.trim() === '') return '레시피 참조';
-    const clean = String(b).replace(/분/g, '').trim();
+    const clean = String(b)
+      .replace(/분/g, '')
+      .replace(/\s*~\s*/g, ' ~ ')
+      .replace(/\s*->\s*/g, ' -> ')
+      .replace(/\s*→\s*/g, ' -> ')
+      .trim();
     return `${clean}분`;
   };
 

@@ -696,9 +696,663 @@ function StepFlowTestGame({ steps, itemId }) {
 }
 
 // ----------------------------------------------------
+// 🧰 [컴포넌트] 전체 준비물 체크리스트 및 품목별 준비물 뷰
+// ----------------------------------------------------
+function EquipmentListView({ studyList, onSelectRecipe }) {
+  const [activeSubTab, setActiveSubTab] = useState('all'); // 'all' (전체 체크리스트) | 'byItem' (품목별)
+  const QNET_DEFAULT_ITEMS = [
+    '계산기',
+    '고무주걱',
+    '국자',
+    '나무주걱',
+    '마스크',
+    '보자기(면60*60cm)',
+    '분무기',
+    '붓',
+    '수세미',
+    '스쿱',
+    '실리콘페이퍼(테프론시트)',
+    '오븐장갑',
+    '온도계',
+    '용기(스텐또는 플라스틱)',
+    '위생모',
+    '위생복',
+    '자',
+    '작업화',
+    '저울',
+    '주걱',
+    '짤주머니',
+    '칼',
+    '행주',
+    '흑색볼펜'
+  ];
+
+  const [customItems, setCustomItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('my_personal_equipments');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [newItemText, setNewItemText] = useState('');
+  const [checkedMap, setCheckedMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem('checked_equipments');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // ✨ 큐넷 준비물 중 챙기지 않을 항목 관리 상태 (true면 안 챙김/제외)
+  const [excludedQnetMap, setExcludedQnetMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem('excluded_qnet_items');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // 챙길 품목만 보기 필터 상태
+  const [onlyIncludedQnet, setOnlyIncludedQnet] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('my_personal_equipments', JSON.stringify(customItems));
+    } catch (e) {}
+  }, [customItems]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('checked_equipments', JSON.stringify(checkedMap));
+    } catch (e) {}
+  }, [checkedMap]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('excluded_qnet_items', JSON.stringify(excludedQnetMap));
+    } catch (e) {}
+  }, [excludedQnetMap]);
+
+  // 각 품목별 도구 추출 맵 & 전체 고유 도구 목록 추출
+  const { allUniqueTools, recipeToolMap } = useMemo(() => {
+    const map = {};
+    const set = new Set();
+
+    (studyList || []).forEach(recipe => {
+      const text = `${recipe.summary || ''} ${recipe.keyPoint ? (Array.isArray(recipe.keyPoint) ? recipe.keyPoint.join(' ') : recipe.keyPoint) : ''} ${recipe.detail || ''}`;
+      const tools = [];
+      const uRegex = /<u>(.*?)<\/u>/gi;
+      let match;
+      while ((match = uRegex.exec(text)) !== null) {
+        if (match[1]?.trim()) tools.push(match[1].trim());
+      }
+      const underRegex = /_([^_]+)_/g;
+      while ((match = underRegex.exec(text)) !== null) {
+        if (match[1]?.trim()) tools.push(match[1].trim());
+      }
+      const uniqueTools = Array.from(new Set(tools));
+      map[recipe.id] = { title: recipe.title, tools: uniqueTools };
+      uniqueTools.forEach(t => set.add(t));
+    });
+
+    return {
+      allUniqueTools: Array.from(set).sort((a, b) => a.localeCompare(b, 'ko')),
+      recipeToolMap: map
+    };
+  }, [studyList]);
+
+  const handleToggleCheck = (name) => {
+    setCheckedMap(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
+
+  // 큐넷 항목 가져갈지 말지 선택 토글
+  const handleToggleQnetInclusion = (toolName) => {
+    setExcludedQnetMap(prev => {
+      const isCurrentlyExcluded = !!prev[toolName];
+      const next = { ...prev, [toolName]: !isCurrentlyExcluded };
+      // 안 챙기기로 변경 시 체크 상태도 해제
+      if (!isCurrentlyExcluded) {
+        setCheckedMap(cPrev => ({ ...cPrev, [toolName]: false }));
+      }
+      return next;
+    });
+  };
+
+  // ✨ 길게 누르기(롱프레스, 450ms) 제어용 Ref 및 타임스탬프
+  const longPressTimerRef = useRef(null);
+  const pressStartTimeRef = useRef(0);
+  const lastLongPressTimeRef = useRef(0);
+
+  const startLongPress = (toolName) => {
+    pressStartTimeRef.current = Date.now();
+    longPressTimerRef.current = setTimeout(() => {
+      lastLongPressTimeRef.current = Date.now();
+      handleToggleQnetInclusion(toolName);
+    }, 450); // 0.45초간 꾹 누르면 지참/미지참 전환
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleClickItem = (toolName, isExcluded) => {
+    // 롱프레스가 실행된 지 800ms 이내에 발생하는 후속 클릭 이벤트는 완전히 차단
+    if (Date.now() - lastLongPressTimeRef.current < 800) {
+      return;
+    }
+    // 실제로 400ms 이상 누르고 있었다면 단순 클릭으로 간주하지 않음
+    if (Date.now() - pressStartTimeRef.current >= 400) {
+      return;
+    }
+    if (!isExcluded) {
+      handleToggleCheck(toolName);
+    }
+  };
+
+  const handleAddCustom = (e) => {
+    e.preventDefault();
+    const trimmed = newItemText.trim();
+    if (!trimmed) return;
+    if (!customItems.includes(trimmed) && !QNET_DEFAULT_ITEMS.includes(trimmed)) {
+      setCustomItems(prev => [...prev, trimmed]);
+    }
+    setNewItemText('');
+  };
+
+  const handleRemoveCustom = (itemToRemove) => {
+    setCustomItems(prev => prev.filter(item => item !== itemToRemove));
+    setCheckedMap(prev => {
+      const next = { ...prev };
+      delete next[itemToRemove];
+      return next;
+    });
+  };
+
+  // 1. 큐넷 수험자지참물 (실제 챙기기로 한 항목만 활성 품목으로 집계)
+  const qnetItems = QNET_DEFAULT_ITEMS;
+  const activeQnetItems = qnetItems.filter(t => !excludedQnetMap[t]);
+
+  // 2. 그 외 내가 따로 챙겨갈 물건 & 품목별 추출 도구 (큐넷 기본 항목과 중복 제거)
+  const otherItems = [
+    ...customItems,
+    ...allUniqueTools.filter(t => !customItems.includes(t) && !QNET_DEFAULT_ITEMS.includes(t))
+  ];
+
+  // 총 챙길 대상 수 = (큐넷 중 챙기기로 한 항목 수) + (그 외 챙길 항목 수)
+  const totalCount = activeQnetItems.length + otherItems.length;
+  const checkedTotalCount = [...activeQnetItems, ...otherItems].filter(t => checkedMap[t]).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', boxSizing: 'border-box' }}>
+      {/* 서브 탭 전환 버튼 */}
+      <div style={{
+        display: 'flex',
+        gap: '6px',
+        width: '100%',
+        justifyContent: 'space-between',
+        paddingBottom: '2px',
+        boxSizing: 'border-box'
+      }}>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('all')}
+          style={{
+            flex: 1,
+            border: activeSubTab === 'all' ? '1.5px solid #0f766e' : '1px solid #bbf7d0',
+            backgroundColor: activeSubTab === 'all' ? '#0f766e' : '#ffffff',
+            color: activeSubTab === 'all' ? '#ffffff' : '#334155',
+            borderRadius: '8px',
+            padding: '7px 4px',
+            fontSize: '12.5px',
+            fontWeight: activeSubTab === 'all' ? 'bold' : '500',
+            cursor: 'pointer',
+            textAlign: 'center',
+            boxShadow: activeSubTab === 'all' ? '0 2px 6px rgba(15, 118, 110, 0.25)' : 'none',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          📋 전체 리스트 ({checkedTotalCount}/{totalCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('byItem')}
+          style={{
+            flex: 1,
+            border: activeSubTab === 'byItem' ? '1.5px solid #0f766e' : '1px solid #bbf7d0',
+            backgroundColor: activeSubTab === 'byItem' ? '#0f766e' : '#ffffff',
+            color: activeSubTab === 'byItem' ? '#ffffff' : '#334155',
+            borderRadius: '8px',
+            padding: '7px 4px',
+            fontSize: '12.5px',
+            fontWeight: activeSubTab === 'byItem' ? 'bold' : '500',
+            cursor: 'pointer',
+            textAlign: 'center',
+            boxShadow: activeSubTab === 'byItem' ? '0 2px 6px rgba(15, 118, 110, 0.25)' : 'none',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          🥐 제품별 준비물 
+        </button>
+      </div>
+
+      {/* 1. 전체 체크리스트 화면 */}
+      {activeSubTab === 'all' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* 큐넷 공식 안내 배너 & 링크 */}
+          <div style={{
+            backgroundColor: '#f0fdf4',
+            border: '1.5px solid #86efac',
+            borderRadius: '10px',
+            padding: '10px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px' }}>📌</span>
+              <span style={{ fontSize: '12px',  color: '#166534' }}>
+                큐넷 공식 수험자 지참준비물
+              </span>
+            </div>
+            <a
+              href="https://www.q-net.or.kr/rcv013.do?id=rcv01314s01&&gSite=Q&gId=&JM_CD=7892&JM_FLD_NM=%EC%A0%9C%EA%B3%BC%EA%B8%B0%EB%8A%A5%EC%82%AC&SELFLD_CD=00&SERIES_CD=04&IMPL_ID=&sel_yy=2026&hh=0&gyul=05"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                backgroundColor: '#0f766e',
+                color: '#ffffff',
+                textDecoration: 'none',
+                padding: '5px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              큐넷 확인하기 ↗
+            </a>
+          </div>
+
+          {/* 1구역: 수험자지참물(큐넷) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f766e', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span>📋</span> 수험자지참물(큐넷)
+                </span>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
+                  ({activeQnetItems.filter(t => checkedMap[t]).length} / {activeQnetItems.length}개 챙김)
+                </span>
+              </div>
+
+              {/* 가져갈 것만 보기 필터 버튼 (동작형 버튼 스타일 적용) */}
+              <button
+                type="button"
+                onClick={() => setOnlyIncludedQnet(!onlyIncludedQnet)}
+                style={{
+                  backgroundColor: onlyIncludedQnet ? '#0f766e' : '#ffffff',
+                  color: onlyIncludedQnet ? '#ffffff' : '#0f766e',
+                  border: onlyIncludedQnet ? '1.5px solid #0f766e' : '1.5px solid #86efac',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  fontSize: '11.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: onlyIncludedQnet ? '0 2px 5px rgba(15, 118, 110, 0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                {onlyIncludedQnet ? '📑 전체 24개 보기' : '👀 챙길 것만 보기'}
+              </button>
+            </div>
+
+            {/* ✨ 길게 누르기 사용법 팁 안내 문구 (눈에 띄는 노란색 배경 적용) */}
+            <div style={{
+              fontSize: '12.5px',
+              color: '#854d0e',
+              backgroundColor: '#fef9c3',
+              padding: '7px 10px',
+              borderRadius: '6px',
+              border: '1px dashed #facc15',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              lineHeight: '1.4'
+            }}>
+              <span>💡</span>
+              <span>
+                안 가져갈 <b>항목을 0.5초간 꾹 길게 누르면</b> 제외/복원됨
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '6px',
+              backgroundColor: '#ffffff',
+              padding: '10px 8px',
+              borderRadius: '10px',
+              border: '1.5px solid #bbf7d0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            }}>
+              {qnetItems
+                .filter(tool => (onlyIncludedQnet ? !excludedQnetMap[tool] : true))
+                .map((tool) => {
+                  const isExcluded = !!excludedQnetMap[tool];
+                  const isChecked = !!checkedMap[tool];
+
+                  return (
+                    <div
+                      key={tool}
+                      onClick={() => handleClickItem(tool, isExcluded)}
+                      onMouseDown={() => startLongPress(tool)}
+                      onMouseUp={cancelLongPress}
+                      onMouseLeave={cancelLongPress}
+                      onTouchStart={() => startLongPress(tool)}
+                      onTouchEnd={cancelLongPress}
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        backgroundColor: isExcluded ? '#f8fafc' : (isChecked ? '#f0fdf4' : '#ffffff'),
+                        border: isExcluded ? '1px dashed #cbd5e1' : (isChecked ? '1.5px solid #86efac' : '1px solid #cbd5e1'),
+                        borderRadius: '8px',
+                        padding: '8px 6px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        MozUserSelect: 'none',
+                        msUserSelect: 'none',
+                        WebkitTouchCallout: 'none', // 모바일 롱프레스 시 브라우저 기본 컨텍스트 메뉴 방지
+                        transition: 'all 0.15s ease',
+                        opacity: isExcluded ? 0.55 : 1,
+                        minWidth: 0,
+                        boxSizing: 'border-box'
+                      }}
+                      title="터치: 체크 / 0.5초 꾹 누름: 챙길 품목에서 제외 또는 복원"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1 }}>
+                        <input
+                          type="checkbox"
+                          disabled={isExcluded}
+                          checked={isChecked}
+                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ cursor: isExcluded ? 'not-allowed' : 'pointer', width: '15px', height: '15px', flexShrink: 0 }}
+                        />
+                        <span style={{
+                          fontSize: tool.length >= 10 ? '10.5px' : (tool.length >= 7 ? '11.5px' : '12.5px'),
+                          color: isExcluded ? '#94a3b8' : (isChecked ? '#166534' : '#1e293b'),
+                          textDecoration: (isExcluded || isChecked) ? 'line-through' : 'none',
+                          fontWeight: (isChecked && !isExcluded) ? 'bold' : '500',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: tool.length >= 10 ? '-0.5px' : '-0.2px',
+                          lineHeight: '1.2'
+                        }}>
+                          {tool}
+                        </span>
+                      </div>
+
+                      {/* 미지참(제외) 상태일 때만 은은하게 작게 표시되는 텍스트 배지 */}
+                      {isExcluded && (
+                        <span style={{
+                          fontSize: '9.5px',
+                          color: '#94a3b8',
+                          backgroundColor: '#f1f5f9',
+                          padding: '1px 3px',
+                          borderRadius: '4px',
+                          border: '1px solid #e2e8f0',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          marginLeft: '2px'
+                        }}>
+                          제외됨
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* 2구역: 그 외 내가 따로 챙겨갈 물건 & 실습 도구 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>🎒</span> 그 외 내가 따로 챙겨갈 물건
+              </span>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
+                {otherItems.filter(t => checkedMap[t]).length} / {otherItems.length}
+              </span>
+            </div>
+
+            {/* 직접 입력 폼 */}
+            <form onSubmit={handleAddCustom} style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                value={newItemText}
+                onChange={e => setNewItemText(e.target.value)}
+                placeholder="추가로 챙길 물건 직접 입력 (예: 물티슈, 펜, 보조배터리 등)"
+                style={{
+                  flex: 1,
+                  padding: '9px 12px',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  backgroundColor: '#0284c7',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '9px 16px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                ➕ 추가
+              </button>
+            </form>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '6px',
+              backgroundColor: '#ffffff',
+              padding: '10px 8px',
+              borderRadius: '10px',
+              border: '1.5px solid #bae6fd',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            }}>
+              {otherItems.length === 0 ? (
+                <div style={{ color: '#94a3b8', fontSize: '12px', padding: '6px', gridColumn: '1 / -1', textAlign: 'center' }}>
+                  따로 챙길 물건을 위 입력창에서 추가해 보세요.
+                </div>
+              ) : (
+                otherItems.map((tool) => {
+                  const isChecked = !!checkedMap[tool];
+                  const isCustom = customItems.includes(tool);
+
+                  return (
+                    <div
+                      key={tool}
+                      onClick={() => handleToggleCheck(tool)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        backgroundColor: isChecked ? '#f0fdf4' : '#f8fafc',
+                        border: isChecked ? '1.5px solid #86efac' : '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '8px 6px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        transition: 'all 0.15s ease',
+                        minWidth: 0,
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1 }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          style={{ cursor: 'pointer', width: '15px', height: '15px', flexShrink: 0 }}
+                        />
+                        <span style={{
+                          fontSize: tool.length >= 10 ? '10.5px' : (tool.length >= 7 ? '11.5px' : '12.5px'),
+                          color: isChecked ? '#166534' : '#1e293b',
+                          textDecoration: isChecked ? 'line-through' : 'none',
+                          fontWeight: isChecked ? 'bold' : '500',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: tool.length >= 10 ? '-0.5px' : '-0.2px',
+                          lineHeight: '1.2'
+                        }}>
+                          {tool}
+                        </span>
+                      </div>
+
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCustom(tool);
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'none',
+                            color: '#ef4444',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            padding: '0 2px',
+                            fontWeight: 'bold',
+                            flexShrink: 0
+                          }}
+                          title="직접 추가한 항목 삭제"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. 제품(품목)별 준비물 화면 */}
+      {activeSubTab === 'byItem' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>💡</span>
+            <span>품목명을 누르면 해당 품목의 공부노트로 이동합니다.</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {studyList.map(item => {
+              const info = recipeToolMap[item.id] || { title: item.title, tools: [] };
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #bbf7d0',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    boxShadow: '0 1px 3px rgba(15, 118, 110, 0.04)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => onSelectRecipe(item.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '13.5px',
+                        fontWeight: 'bold',
+                        color: '#0f766e',
+                        cursor: 'pointer',
+                        padding: 0,
+                        textDecoration: 'underline'
+                      }}
+                      title="공부노트로 이동"
+                    >
+                      🥐 {item.title}
+                    </button>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      도구 {info.tools.length}개
+                    </span>
+                  </div>
+
+                  {info.tools.length === 0 ? (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>등록된 특수 준비 도구가 없습니다.</span>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {info.tools.map((t, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            backgroundColor: '#e0f2fe',
+                            color: '#0369a1',
+                            border: '1px solid #7dd3fc',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11.5px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------
 // 🧭 [컴포넌트] 공정플로우 뷰
 // ----------------------------------------------------
-function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
+function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenEquipmentView }) {
   const [activeStep, setActiveStep] = useState(0);
   const stepRefs = useRef([]);
 
@@ -711,7 +1365,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
 
     text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
 
-    const rawBlocks = text.split(/(?=###\s+|(?<=\n)\[\d+단계\])/g).filter(b => b.trim());
+    const rawBlocks = text.split(/(?=###\s+|(?<=\n)\[\d+(?:단계)?\])/g).filter(b => b.trim());
 
     if (rawBlocks.length === 0) return [];
 
@@ -720,7 +1374,9 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
       const firstLine = lines[0].replace(/^###\s+/, '').trim();
 
       const match = firstLine.match(/\[(.*?)\]\s*(.*)/);
-      const badge = match ? match[1] : `${idx + 1}단계`;
+      let rawBadge = match ? match[1] : `${idx + 1}단계`;
+      // [1] 형태일 경우 [1단계]로 자동 확장
+      const badge = /^\d+$/.test(rawBadge.trim()) ? `${rawBadge.trim()}단계` : rawBadge;
       let title = match ? (match[2] || '공정') : firstLine;
       const body = lines.slice(1).join('\n').trim();
 
@@ -744,6 +1400,26 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
         body
       };
     });
+  }, [contentData]);
+
+  // 본문 전체에서 <u>도구</u> 또는 _도구_ 형식으로 밑줄 친 단어 자동 추출 및 중복 제거
+  const extractedTools = useMemo(() => {
+    if (!contentData) return [];
+    let text = Array.isArray(contentData)
+      ? contentData.map(item => (typeof item === 'string' ? item : item.text)).join('\n')
+      : String(contentData);
+
+    const tools = [];
+    const uRegex = /<u>(.*?)<\/u>/gi;
+    let match;
+    while ((match = uRegex.exec(text)) !== null) {
+      if (match[1]?.trim()) tools.push(match[1].trim());
+    }
+    const underRegex = /_([^_]+)_/g;
+    while ((match = underRegex.exec(text)) !== null) {
+      if (match[1]?.trim()) tools.push(match[1].trim());
+    }
+    return Array.from(new Set(tools));
   }, [contentData]);
 
   useEffect(() => {
@@ -946,6 +1622,8 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId }) {
 // ----------------------------------------------------
 function AllItemListView({ studyList, onSelectRecipe }) {
   const [activeCategory, setActiveCategory] = useState('반죽법');
+
+  const [showNotes, setShowNotes] = useState(false); // ✨ 주의사항 표시 토글 상태 (기본: 숨김)
 
   const formatTemp = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '';
@@ -1185,6 +1863,23 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                           <span style={{ color: '#1e293b', fontWeight: '600' }}>{time}</span>
                         </div>
                       </div>
+                    {showNotes && item.spec?.note && item.spec.note.trim() !== '' && (
+                        <div style={{ 
+                          borderTop: '1px dashed #fde68a', 
+                          paddingTop: '5px', 
+                          marginTop: '3px' 
+                        }}>
+                          <span style={{ 
+                            color: '#92400e', 
+                            fontSize: '11px', 
+                            lineHeight: '1.4', 
+                            wordBreak: 'break-all',
+                            display: 'block'
+                          }}>
+                            {item.spec.note}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -1241,9 +1936,37 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         })}
       </div>
 
-      <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span>💡</span>
-        <span>품목명을 누르면 공부노트로 이동합니다.</span>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        flexWrap: 'wrap', 
+        gap: '6px' 
+      }}>
+        <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span>💡</span>
+          <span>품목명을 누르면 공부노트로 이동</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowNotes(!showNotes)}
+          style={{
+            backgroundColor: showNotes ? '#fef3c7' : '#ffffff',
+            color: showNotes ? '#92400e' : '#64748b',
+            border: showNotes ? '1px solid #facc15' : '1px solid #cbd5e1',
+            borderRadius: '6px',
+            padding: '3px 8px',
+            fontSize: '11.5px',
+            fontWeight: showNotes ? 'bold' : 'normal',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          {showNotes ? '⚡ 주의사항 숨김' : '⚡ 주의사항 보기'}
+        </button>
       </div>
 
       {activeCategory === '반죽법' && (
@@ -1351,6 +2074,27 @@ function App() {
     if (hasAdminAccess) {
       setEditTargetRecipe(target);
       setIsAdminModalOpen(true);
+    }
+  };
+
+  // ⚙️ 제목 옆 톱니바퀴를 눌러 admin=hoyang 인증 토글 함수
+  const handleAdminToggle = () => {
+    if (hasAdminAccess) {
+      if (window.confirm('관리자 모드를 종료하시겠습니까?')) {
+        localStorage.removeItem('hasAdminAccess');
+        setHasAdminAccess(false);
+        alert('관리자 모드가 해제되었습니다.');
+      }
+      return;
+    }
+
+    const inputPw = window.prompt('관리자 비밀번호를 입력하세요:');
+    if (inputPw === ADMIN_KEY) {
+      localStorage.setItem('hasAdminAccess', 'true');
+      setHasAdminAccess(true);
+      alert('관리자 인증이 완료되었습니다! 등록 및 수정 버튼이 활성화됩니다.');
+    } else if (inputPw !== null) {
+      alert('비밀번호가 올바르지 않습니다.');
     }
   };
 
@@ -1469,15 +2213,29 @@ function App() {
     text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
     const lines = text.split('\n');
 
-    const formatInlineBold = (content) => {
-      const parts = content.split(/(\*\*.*?\*\*)/g);
-      return parts.map((part, i) => {
+    // 커스텀 마크다운 인라인 파서: **강조**, ~취소~, ::주황색::, ==배경색==, <u>밑줄</u>, _밑줄_
+    const formatCustomMarkdown = (content) => {
+      const regex = /(\*\*.*?\*\*|~.*?~|::.*?::|==.*?==|<u>.*?<\/u>|_[^_]+_)/g;
+      const parts = content.split(regex);
+
+      return parts.filter(Boolean).map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return (
-            <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>
-              {part.slice(2, -2)}
-            </strong>
-          );
+          return <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('~') && part.endsWith('~')) {
+          return <span key={i} style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{part.slice(1, -1)}</span>;
+        }
+        if (part.startsWith('::') && part.endsWith('::')) {
+          return <span key={i} style={{ color: '#ea580c', fontWeight: 'bold' }}>{part.slice(2, -2)}</span>;
+        }
+        if (part.startsWith('==') && part.endsWith('==')) {
+          return <mark key={i} style={{ backgroundColor: '#fef08a', color: '#713f12', padding: '1px 3px', borderRadius: '3px' }}>{part.slice(2, -2)}</mark>;
+        }
+        if (part.startsWith('<u>') && part.endsWith('</u>')) {
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(3, -4)}</u>;
+        }
+        if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(1, -1)}</u>;
         }
         return part;
       });
@@ -1492,7 +2250,8 @@ function App() {
             return <div key={idx} style={{ height: '8px' }} />;
           }
 
-          if (/^---+$/.test(line)) {
+          // 일반 대시(-), 언더바(_), 특수 대시(—, –)가 공백 포함 2개 이상 조합되어 줄 전체를 이룰 때 구분선 처리
+          if (/^[\s\-_—–~*]{2,}$/.test(line) && /[\-_—–]/.test(line)) {
             return (
               <div 
                 key={idx} 
@@ -1526,7 +2285,7 @@ function App() {
                 }}
               >
                 <span>📌</span>
-                <span>{formatInlineBold(cleanTitle)}</span>
+                <span>{formatCustomMarkdown(cleanTitle)}</span>
               </div>
             );
           }
@@ -1548,7 +2307,61 @@ function App() {
                 }}
               >
                 <span>▫️</span>
-                <span>{formatInlineBold(cleanSubTitle)}</span>
+                <span>{formatCustomMarkdown(cleanSubTitle)}</span>
+              </div>
+            );
+          }
+
+          // 느낌표(!)로 시작하는 연속된 주의사항들을 하나의 박스 안에 묶어 표시
+          if (/^!\s*/.test(line)) {
+            // 이전 줄도 느낌표였다면 이미 묶음 박스 안에 포함되었으므로 중복 렌더링 방지
+            const prevLine = idx > 0 ? lines[idx - 1].trim() : '';
+            if (/^!\s*/.test(prevLine)) {
+              return null;
+            }
+
+            // 현재 줄부터 연속된 모든 느낌표 주의사항 줄 수집
+            const cautionLines = [];
+            for (let i = idx; i < lines.length; i++) {
+              const cur = lines[i].trim();
+              if (/^!\s*/.test(cur)) {
+                cautionLines.push(cur.replace(/^!\s*/, ''));
+              } else {
+                break;
+              }
+            }
+
+            return (
+              <div 
+                key={idx} 
+                style={{ 
+                  backgroundColor: '#fffbeb', 
+                  border: '1px solid #fde68a', 
+                  borderLeft: '4px solid #f59e0b', 
+                  padding: '7px 10px', 
+                  borderRadius: '6px', 
+                  fontSize: '12.5px', 
+                  color: '#92400e', 
+                  lineHeight: '1.55', 
+                  margin: '4px 0',
+                  boxShadow: '0 1px 2px rgba(245, 158, 11, 0.05)'
+                }}
+              >
+                {cautionLines.length === 1 ? (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+                    <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+                    <span>{formatCustomMarkdown(cautionLines[0])}</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {cautionLines.map((cLine, cIdx) => (
+                      <div key={cIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+                        <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+                        <span>{formatCustomMarkdown(cLine)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           }
@@ -1568,7 +2381,7 @@ function App() {
                   margin: '4px 0' 
                 }}
               >
-                {formatInlineBold(line)}
+                {formatCustomMarkdown(line)}
               </div>
             );
           }
@@ -1589,7 +2402,7 @@ function App() {
                   margin: '2px 0 4px 6px' 
                 }}
               >
-                {formatInlineBold(quoteContent)}
+                {formatCustomMarkdown(quoteContent)}
               </div>
             );
           }
@@ -1598,6 +2411,7 @@ function App() {
           const isNumbered = /^\d+\.\s+/.test(line);
 
           if (isBullet || isNumbered) {
+            // 문장 앞 '- ' 또는 '* '를 점(•) 기호로 변환
             const bulletPrefix = isNumbered ? line.match(/^\d+\./)[0] : '•';
             const cleanContent = line.replace(/^([-*]|\d+\.)\s+/, '');
 
@@ -1618,7 +2432,7 @@ function App() {
                   {bulletPrefix}
                 </span>
                 <span style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                  {formatInlineBold(cleanContent)}
+                  {formatCustomMarkdown(cleanContent)}
                 </span>
               </div>
             );
@@ -1635,7 +2449,7 @@ function App() {
                 overflowWrap: 'anywhere' 
               }}
             >
-              {formatInlineBold(line)}
+              {formatCustomMarkdown(line)}
             </div>
           );
         })}
@@ -1699,7 +2513,41 @@ function App() {
         paddingBottom: '14px' 
       }}>
         <div>
-          <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>🥐 제과기능사 공부노트</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <h1 style={{ color: '#0f766e', margin: '0 0 4px 0', fontSize: '21px', fontWeight: 'bold' }}>
+              <span
+                onClick={handleAdminToggle}
+                style={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  display: 'inline-block'
+                }}
+              >
+                🥐
+              </span>
+              {' '}제과기능사 공부노트
+              {hasAdminAccess && (
+                <button
+                  type="button"
+                  onClick={fetchRecipesFromDB}
+                  style={{
+                    marginLeft: '8px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    padding: '2px 4px',
+                    verticalAlign: 'middle',
+                    lineHeight: 1
+                  }}
+                  title="DB 새로고침"
+                >
+                  🔄
+                </button>
+              )}
+            </h1>
+          </div>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '13px' }}>
             우리 모두 합격까지 힘내보아요! 🍀
           </p>
@@ -1723,7 +2571,7 @@ function App() {
               }}
               title="새 제과 품목 등록"
             >
-              ⚙ 새 품목 등록
+              ⚙ 등록
             </button>
           )}
 
@@ -1741,7 +2589,7 @@ function App() {
               fontSize: '12px' 
             }}
           >
-            📖 공부노트
+            📖 공부
           </button>
           
           <button 
@@ -1762,8 +2610,8 @@ function App() {
           >
             🎯 테스트
           </button>
-
-          <button 
+                   
+         <button 
             onClick={() => setMode('list')}
             style={{ 
               padding: '7px 10px', 
@@ -1777,9 +2625,9 @@ function App() {
               boxShadow: mode === 'list' ? '0 2px 5px rgba(15, 118, 110, 0.25)' : 'none'
             }}
           >
-            📋 전체 리스트
+            📋 총정리
           </button>
-          
+
           <button 
             onClick={() => setMode('game')}
             style={{ 
@@ -1797,6 +2645,23 @@ function App() {
             🎮 게임
           </button>
 
+          <button 
+            onClick={() => setMode('equipment')}
+            style={{ 
+              padding: '7px 10px', 
+              borderRadius: '8px', 
+              border: '1px solid ' + (mode === 'equipment' ? '#0f766e' : '#e5e7eb'), 
+              backgroundColor: mode === 'equipment' ? '#0f766e' : '#fff', 
+              color: mode === 'equipment' ? '#ffffff' : '#4b5563', 
+              fontWeight: 'bold', 
+              cursor: 'pointer', 
+              fontSize: '12px',
+              boxShadow: mode === 'equipment' ? '0 2px 5px rgba(15, 118, 110, 0.25)' : 'none'
+            }}
+          >
+            🧰 준비물
+          </button>
+
           
         </div>
       </div>
@@ -1809,6 +2674,14 @@ function App() {
       {/* 3. [전체 리스트 모드] */}
       {mode === 'list' && (
         <AllItemListView 
+          studyList={studyList} 
+          onSelectRecipe={handleSelectRecipeFromList}
+        />
+      )}
+
+      {/* 3-2. [준비물 창 모드] */}
+      {mode === 'equipment' && (
+        <EquipmentListView 
           studyList={studyList} 
           onSelectRecipe={handleSelectRecipeFromList}
         />
@@ -2222,10 +3095,58 @@ function App() {
                           renderFormattedNotes={renderFormattedNotes} 
                           mode={mode}
                           itemId={item.id}
+                          onOpenEquipmentView={() => setMode('equipment')}
                         />
                       </div>
                     </div>
                   )}
+
+                  {/* ✨ 공정 순서 아래로 따로 분리된 슬림 준비 도구 목록 */}
+                  {(() => {
+                    const allText = `${item.summary || ''} ${item.keyPoint ? (Array.isArray(item.keyPoint) ? item.keyPoint.join(' ') : item.keyPoint) : ''} ${item.detail || ''}`;
+                    const tools = [];
+                    const uRegex = /<u>(.*?)<\/u>/gi;
+                    let match;
+                    while ((match = uRegex.exec(allText)) !== null) {
+                      if (match[1]?.trim()) tools.push(match[1].trim());
+                    }
+                    const underRegex = /_([^_]+)_/g;
+                    while ((match = underRegex.exec(allText)) !== null) {
+                      if (match[1]?.trim()) tools.push(match[1].trim());
+                    }
+                    const itemTools = Array.from(new Set(tools));
+
+                    if (itemTools.length === 0) return null;
+
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0 2px',
+                        boxSizing: 'border-box'
+                      }}>
+                        {itemTools.map((tool, tIdx) => (
+                          <span
+                            key={tIdx}
+                            style={{
+                              backgroundColor: '#e0f2fe',
+                              color: '#0369a1',
+                              border: '1px solid #7dd3fc',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11.5px',
+                              fontWeight: '600',
+                              lineHeight: '1.2'
+                            }}
+                          >
+                            {tool}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {mode === 'study' && hasDetail && (
                     <div>
