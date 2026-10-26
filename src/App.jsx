@@ -1692,6 +1692,8 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const [showNotes, setShowNotes] = useState(false); // ✨ 주의사항 표시 토글 상태 (기본: 숨김)
 
+  const [showMnemonic, setShowMnemonic] = useState(true); // ✨ 암기연상법 표시 토글 상태 (기본: 보임)
+
   const formatTemp = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '';
     const match = text.match(/\d+/);
@@ -1700,13 +1702,29 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const formatOven = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '-';
-    const clean = text.replace(/℃/g, '').replace(/\s+/g, '');
+    const raw = String(text).replace(/℃/g, '').trim();
+    const parts = raw.split(/->|→|\n/).map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      return parts.map(p => {
+        const clean = p.replace(/\s*\/\s*/g, ' / ').trim();
+        return `${clean}℃`;
+      });
+    }
+    const clean = raw.replace(/\s*\/\s*/g, ' / ').trim();
     return `${clean}℃`;
   };
 
   const formatTime = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '-';
-    const clean = text.replace(/분/g, '').replace(/\s+/g, '');
+    const raw = String(text).replace(/분/g, '').trim();
+    const parts = raw.split(/->|→|\n/).map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      return parts.map(p => {
+        const clean = p.replace(/\s*~\s*/g, ' ~ ').trim();
+        return `${clean}분`;
+      });
+    }
+    const clean = raw.replace(/\s*~\s*/g, ' ~ ').trim();
     return `${clean}분`;
   };
 
@@ -1921,15 +1939,53 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '1px' }}>
-                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                          <span style={{ color: '#64748b', fontSize: '10.5px' }}>오븐:</span>
-                          <span style={{ color: '#1e293b', fontWeight: '600' }}>{oven}</span>
+                        <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                          <span style={{ color: '#64748b', fontSize: '10.5px', marginTop: '1px' }}>오븐:</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                            {Array.isArray(oven) ? (
+                              oven.map((oItem, oIdx) => (
+                                <span key={oIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
+                                  {oItem}
+                                </span>
+                              ))
+                            ) : (
+                              <span style={{ color: '#1e293b', fontWeight: '600' }}>{oven}</span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                          <span style={{ color: '#64748b', fontSize: '10.5px' }}>시간:</span>
-                          <span style={{ color: '#1e293b', fontWeight: '600' }}>{time}</span>
+                        <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
+                          <span style={{ color: '#64748b', fontSize: '10.5px', marginTop: '1px' }}>시간:</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                            {Array.isArray(time) ? (
+                              time.map((tItem, tIdx) => (
+                                <span key={tIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
+                                  {tItem}
+                                </span>
+                              ))
+                            ) : (
+                              <span style={{ color: '#1e293b', fontWeight: '600' }}>{time}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                    {showMnemonic && item.spec?.mnemonic && item.spec.mnemonic.trim() !== '' && (
+                        <div style={{ 
+                          borderTop: '1px dashed #86efac', 
+                          paddingTop: '5px', 
+                          marginTop: '3px' 
+                        }}>
+                          <span style={{ 
+                            color: '#0f766e', 
+                            fontSize: '11px', 
+                            lineHeight: '1.4', 
+                            wordBreak: 'break-all',
+                            display: 'block',
+                            fontWeight: 'normal'
+                          }}>
+                            {item.spec.mnemonic}
+                          </span>
+                        </div>
+                      )}
                     {showNotes && item.spec?.note && item.spec.note.trim() !== '' && (
                         <div style={{ 
                           borderTop: '1px dashed #fde68a', 
@@ -2014,26 +2070,48 @@ function AllItemListView({ studyList, onSelectRecipe }) {
           <span>💡</span>
           <span>품목명을 누르면 공부노트로 이동</span>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNotes(!showNotes)}
-          style={{
-            backgroundColor: showNotes ? '#fef3c7' : '#ffffff',
-            color: showNotes ? '#92400e' : '#64748b',
-            border: showNotes ? '1px solid #facc15' : '1px solid #cbd5e1',
-            borderRadius: '6px',
-            padding: '3px 8px',
-            fontSize: '11.5px',
-            fontWeight: showNotes ? 'bold' : 'normal',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          {showNotes ? '⚡ 주의사항 숨김' : '⚡ 주의사항 보기'}
-        </button>
+        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setShowMnemonic(!showMnemonic)}
+            style={{
+              backgroundColor: showMnemonic ? '#f0fdf4' : '#ffffff',
+              color: showMnemonic ? '#0f766e' : '#64748b',
+              border: showMnemonic ? '1px solid #86efac' : '1px solid #cbd5e1',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '11.5px',
+              fontWeight: 'normal',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {showMnemonic ? '연상법 숨김' : '연상법 보기'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowNotes(!showNotes)}
+            style={{
+              backgroundColor: showNotes ? '#fef3c7' : '#ffffff',
+              color: showNotes ? '#92400e' : '#64748b',
+              border: showNotes ? '1px solid #facc15' : '1px solid #cbd5e1',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '11.5px',
+              fontWeight: showNotes ? 'bold' : 'normal',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {showNotes ? '⚡ 주의사항 숨김' : '⚡ 주의사항 보기'}
+          </button>
+        </div>
       </div>
 
       {activeCategory === '반죽법' && (
@@ -2609,28 +2687,33 @@ function App() {
     return clean ? `${clean}℃` : '-';
   };
 
-  // 오븐온도 포맷터: 기호 정리 후 구분자(/, ->) 주변에 널널한 공백 유지 및 맨 끝에만 ℃ 표기
+  // 오븐온도 포맷터: 2단계(->) 분리 및 각 줄마다 ℃ 부착
   const displayOven = (o) => {
     if (!o || o.trim() === '-' || o.trim() === '') return '레시피 참조';
-    const clean = String(o)
-      .replace(/℃/g, '')
-      .replace(/\s*\/\s*/g, ' / ')
-      .replace(/\s*->\s*/g, ' -> ')
-      .replace(/\s*→\s*/g, ' -> ')
-      .replace(/\s*~\s*/g, ' ~ ')
-      .trim();
+    const raw = String(o).replace(/℃/g, '').trim();
+    const parts = raw.split(/->|→|\n/).map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      return parts.map(p => {
+        const clean = p.replace(/\s*\/\s*/g, ' / ').trim();
+        return `${clean}℃`;
+      });
+    }
+    const clean = raw.replace(/\s*\/\s*/g, ' / ').trim();
     return `${clean}℃`;
   };
 
-  // 굽기시간 포맷터: 기호 정리 후 구분자(~, ->) 주변에 널널한 공백 유지 및 맨 끝에만 분 표기
+  // 굽기시간 포맷터: 2단계(->) 분리 및 각 줄마다 분 부착
   const displayTime = (b) => {
     if (!b || b.trim() === '-' || b.trim() === '') return '레시피 참조';
-    const clean = String(b)
-      .replace(/분/g, '')
-      .replace(/\s*~\s*/g, ' ~ ')
-      .replace(/\s*->\s*/g, ' -> ')
-      .replace(/\s*→\s*/g, ' -> ')
-      .trim();
+    const raw = String(b).replace(/분/g, '').trim();
+    const parts = raw.split(/->|→|\n/).map(s => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      return parts.map(p => {
+        const clean = p.replace(/\s*~\s*/g, ' ~ ').trim();
+        return `${clean}분`;
+      });
+    }
+    const clean = raw.replace(/\s*~\s*/g, ' ~ ').trim();
     return `${clean}분`;
   };
 
@@ -3069,16 +3152,30 @@ function App() {
                 {/* 4. 오븐 온도 (190 / 130 입력 시 190℃ / 130℃ 자동 부착) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>오븐 온도</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {displayOven(item.spec.ovenTemp)}
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {(() => {
+                      const ovenVal = displayOven(item.spec.ovenTemp);
+                      return Array.isArray(ovenVal) ? (
+                        ovenVal.map((v, i) => <span key={i} style={{ lineHeight: '1.25' }}>{v}</span>)
+                      ) : (
+                        <span>{ovenVal}</span>
+                      );
+                    })()}
                   </div>
                 </div>
 
                 {/* 5. 굽기 시간 (10 ~ 12 또는 25 입력 시 '분' 자동 부착) */}
                 <div style={{ backgroundColor: '#fafafa', padding: '12px', borderRadius: '8px', border: '1px solid #f3f4f6', minWidth: 0, boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>굽기 시간</div>
-                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                    {displayTime(item.spec.bakingTime)}
+                  <div style={{ fontSize: '16px', color: '#374151', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {(() => {
+                      const timeVal = displayTime(item.spec.bakingTime);
+                      return Array.isArray(timeVal) ? (
+                        timeVal.map((v, i) => <span key={i} style={{ lineHeight: '1.25' }}>{v}</span>)
+                      ) : (
+                        <span>{timeVal}</span>
+                      );
+                    })()}
                   </div>
                 </div>
 
