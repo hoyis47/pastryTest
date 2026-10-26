@@ -3091,6 +3091,16 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {/* 7. 암기 연상법 */}
+                {item.spec?.mnemonic && item.spec.mnemonic.trim() !== '' && (
+                  <div style={{ gridColumn: 'span 2', backgroundColor: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #bbf7d0', minWidth: 0, boxSizing: 'border-box' }}>
+                    <div style={{ fontSize: '12px', color: '#0f766e', fontWeight: 'bold' }}>🧠 암기 연상법</div>
+                    <div style={{ fontSize: '14.5px', color: '#166534', fontWeight: 'bold', marginTop: '4px', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: '1.45' }}>
+                      {item.spec.mnemonic}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3102,6 +3112,7 @@ function App() {
               const ovenRevealed = !!(hiddenState[`spec_${item.id}_oven`]?.['0_0']);
               const bakingRevealed = !!(hiddenState[`spec_${item.id}_baking`]?.['0_0']);
               const noteRevealed = !!(hiddenState[`spec_${item.id}_note`]?.['0_0']);
+              const mnemonicRevealed = !!(hiddenState[`spec_${item.id}_mnemonic`]?.['0_0']);
 
               return (
                 <div style={{ 
@@ -3196,6 +3207,21 @@ function App() {
                       </div>
                       <div style={getSpecTextStyle(noteRevealed, 'note')}>
                         {item.spec.note}
+                      </div>
+                    </div>
+                  )}
+
+                  {item.spec?.mnemonic && item.spec.mnemonic.trim() !== '' && (
+                    <div 
+                      onClick={() => toggleWordHidden(`spec_${item.id}_mnemonic`, '0_0')}
+                      style={{ gridColumn: 'span 2', ...getSpecCardStyle(mnemonicRevealed, 'default') }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', color: mnemonicRevealed ? '#0f766e' : '#6b7280', fontWeight: 'bold' }}>🧠 암기 연상법</span>
+                        <span style={{ fontSize: '12px' }}>{mnemonicRevealed ? '👁️' : '🔒'}</span>
+                      </div>
+                      <div style={getSpecTextStyle(mnemonicRevealed, 'default')}>
+                        {item.spec.mnemonic}
                       </div>
                     </div>
                   )}

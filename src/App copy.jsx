@@ -755,8 +755,9 @@ function EquipmentListView({ studyList, onSelectRecipe, onSelectRecipeWithTool }
     }
   });
 
-  // 챙길 품목만 보기 필터 상태
+// 챙길 품목만 보기 필터 상태
   const [onlyIncludedQnet, setOnlyIncludedQnet] = useState(false);
+  const [toolSearchKeyword, setToolSearchKeyword] = useState(''); // ✨ 도구 검색어 상태
 
   useEffect(() => {
     try {
@@ -1275,17 +1276,61 @@ function EquipmentListView({ studyList, onSelectRecipe, onSelectRecipeWithTool }
       {/* 2. 제품(품목)별 준비물 화면 */}
       {activeSubTab === 'byItem' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
-            <span style={{ lineHeight: '1.4' }}>💡</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.4' }}>
-              <span>품목명을 누르면 해당 노트로 이동</span>
-              <span>준비물을 누르면 해당 노트로 이동</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+            <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+              <span style={{ lineHeight: '1.4' }}>💡</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.4' }}>
+                <span>품목명을 누르면 해당 노트로 이동</span>
+                <span>준비물을 누르면 해당 노트로 이동</span>
+              </div>
+            </div>
+            {/* 🔍 도구 실시간 검색 입력창 */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: '240px' }}>
+              <input
+                type="text"
+                value={toolSearchKeyword}
+                onChange={e => setToolSearchKeyword(e.target.value)}
+                placeholder="도구 이름 검색 (예: 짤주머니, 체)"
+                style={{
+                  width: '100%',
+                  padding: '7px 28px 7px 10px',
+                  border: '1.5px solid #86efac',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#ffffff'
+                }}
+              />
+              {toolSearchKeyword && (
+                <button
+                  type="button"
+                  onClick={() => setToolSearchKeyword('')}
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    padding: '2px 4px'
+                  }}
+                  title="검색어 지우기"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {studyList.map(item => {
               const info = recipeToolMap[item.id] || { title: item.title, tools: [] };
+              const cleanKeyword = toolSearchKeyword.trim().toLowerCase();
+
               return (
                 <div
                   key={item.id}
@@ -1324,26 +1369,33 @@ function EquipmentListView({ studyList, onSelectRecipe, onSelectRecipeWithTool }
                     <span style={{ fontSize: '12px', color: '#94a3b8' }}>등록된 특수 준비 도구가 없습니다.</span>
                   ) : (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {info.tools.map((t, idx) => (
-                        <span
-                          key={idx}
-                          onClick={() => onSelectRecipeWithTool ? onSelectRecipeWithTool(item.id, t) : onSelectRecipe(item.id)}
-                          style={{
-                            backgroundColor: '#e0f2fe',
-                            color: '#0369a1',
-                            border: '1px solid #7dd3fc',
-                            padding: '2px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11.5px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            userSelect: 'none'
-                          }}
-                          title={`클릭 시 [${t}]가 사용되는 공정 단계로 이동`}
-                        >
-                          {t}
-                        </span>
-                      ))}
+                      {info.tools.map((t, idx) => {
+                        const isMatched = cleanKeyword !== '' && t.toLowerCase().includes(cleanKeyword);
+
+                        return (
+                          <span
+                            key={idx}
+                            onClick={() => onSelectRecipeWithTool ? onSelectRecipeWithTool(item.id, t) : onSelectRecipe(item.id)}
+                            style={{
+                              backgroundColor: isMatched ? '#fef08a' : '#e0f2fe',
+                              color: isMatched ? '#854d0e' : '#0369a1',
+                              border: isMatched ? '2px solid #eab308' : '1px solid #7dd3fc',
+                              boxShadow: isMatched ? '0 0 8px rgba(234, 179, 8, 0.6)' : 'none',
+                              transform: isMatched ? 'scale(1.06)' : 'scale(1)',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11.5px',
+                              fontWeight: isMatched ? '900' : 'bold',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title={`클릭 시 [${t}]가 사용되는 공정 단계로 이동`}
+                          >
+                            {t}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

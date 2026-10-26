@@ -12,6 +12,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
       specificGravity: '',
       ovenTemp: '',
       bakingTime: '',
+      mnemonic: '',
       note: ''
     },
     mixingType: '수작업',
@@ -45,6 +46,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
           specificGravity: targetRecipe.spec?.specificGravity || '',
           ovenTemp: targetRecipe.spec?.ovenTemp || '',
           bakingTime: targetRecipe.spec?.bakingTime || '',
+          mnemonic: targetRecipe.spec?.mnemonic || '',
           note: targetRecipe.spec?.note || ''
         },
         mixingType: targetRecipe.mixingType || '수작업',
@@ -61,7 +63,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         id: null,
         category: '',
         title: '',
-        spec: { mixingMethod: '', doughTemp: '', specificGravity: '', ovenTemp: '', bakingTime: '', note: '' },
+        spec: { mixingMethod: '', doughTemp: '', specificGravity: '', ovenTemp: '', bakingTime: '', mnemonic: '', note: '' },
         mixingType: '수작업',
         isWarmed: '0',
         isSacrifice: '0',
@@ -176,7 +178,8 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
           doughTemp: cleanDoughTemp,
           ovenTemp: cleanOvenTemp,
           bakingTime: cleanBakingTime,
-          specificGravity: cleanGravity
+          specificGravity: cleanGravity,
+          mnemonic: formData.spec.mnemonic || ''
         },
         videos: cleanedVideos,
         adminPassword: secretKey
@@ -369,6 +372,18 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', boxSizing: 'border-box' }}
               />
             </div>
+          </div>
+
+          {/* ✨ 암기 연상법 입력 필드 */}
+          <div style={{ marginTop: '8px' }}>
+            <span style={{ fontSize: '11px', color: '#0f766e', fontWeight: 'bold' }}>🧠 암기 연상법</span>
+            <input
+              type="text"
+              value={formData.spec.mnemonic || ''}
+              onChange={e => setFormData({ ...formData, spec: { ...formData.spec, mnemonic: e.target.value } })}
+              placeholder="예: 브라우니는 칠흑(170)같은 초콜릿을 육중(160)하게 굽는다"
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid #86efac', backgroundColor: '#f0fdf4', borderRadius: '6px', boxSizing: 'border-box', marginTop: '3px', fontSize: '12px' }}
+            />
           </div>
 
           {/* ✨ 반죽타입 / 가온법 / 희생반죽 선택 필드 */}

@@ -53,6 +53,7 @@ export default async function handler(request, response) {
           specific_gravity,
           oven_temp,
           baking_time,
+          mnemonic,
           note,
           mixing_type,
           is_warmed,
@@ -80,6 +81,7 @@ export default async function handler(request, response) {
           specificGravity: row.specific_gravity,
           ovenTemp: row.oven_temp,
           bakingTime: row.baking_time,
+          mnemonic: row.mnemonic,
           note: row.note
         },
         mixingType: row.mixing_type,
@@ -134,6 +136,7 @@ export default async function handler(request, response) {
       const specificGravity = spec?.specificGravity || '-';
       const ovenTemp = spec?.ovenTemp || '-';
       const bakingTime = spec?.bakingTime || '-';
+      const mnemonic = spec?.mnemonic || '';
       const note = spec?.note || '';
       const mixingTypeVal = mixingType || '수작업';
       const isWarmedVal = String(isWarmed ?? '0');
@@ -143,7 +146,7 @@ export default async function handler(request, response) {
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
       if (id) {
-        await sql`
+        const updateResult = await sql`
           UPDATE recipes
           SET 
             category = ${categoryVal},
@@ -153,6 +156,7 @@ export default async function handler(request, response) {
             specific_gravity = ${specificGravity},
             oven_temp = ${ovenTemp},
             baking_time = ${bakingTime},
+            mnemonic = ${mnemonic},
             note = ${note},
             mixing_type = ${mixingTypeVal},
             is_warmed = ${isWarmedVal},
@@ -163,7 +167,17 @@ export default async function handler(request, response) {
             is_summary_published = ${isSummaryPublished},
             is_detail_published = ${isDetailPublished}
           WHERE item_id = ${id};
+        RETURNING *;
         `;
+
+        // 🔍 실제 실행된 결과 및 변수 역추적용 데이터 반환
+        return response.status(200).json({
+          debug_target_id: id,
+          debug_target_id_type: typeof id,
+          debug_received_mnemonic: mnemonic,
+          debug_updated_rows_count: updateResult.length,
+          debug_updated_data: updateResult
+        });
       } else {
         // 새 item_id 생성 (가장 큰 id + 1)
         const maxResult = await sql`SELECT COALESCE(MAX(item_id), 0) + 1 AS next_id FROM recipes;`;
@@ -172,11 +186,11 @@ export default async function handler(request, response) {
         await sql`
           INSERT INTO recipes (
             item_id, category, title, mixing_method, dough_temp, specific_gravity,
-            oven_temp, baking_time, note, mixing_type, is_warmed, is_sacrifice,
+            oven_temp, baking_time, mnemonic, note, mixing_type, is_warmed, is_sacrifice,
             videos, summary, detail, is_summary_published, is_detail_published
           ) VALUES (
             ${nextId}, ${categoryVal}, ${title}, ${mixingMethod}, ${doughTemp}, ${specificGravity},
-            ${ovenTemp}, ${bakingTime}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
+            ${ovenTemp}, ${bakingTime}, ${mnemonic}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
             ${videosJson}::jsonb, ${summary}, ${detail}, ${isSummaryPublished}, ${isDetailPublished}
           );
         `;

@@ -698,7 +698,7 @@ function StepFlowTestGame({ steps, itemId }) {
 // ----------------------------------------------------
 // 🧰 [컴포넌트] 전체 준비물 체크리스트 및 품목별 준비물 뷰
 // ----------------------------------------------------
-function EquipmentListView({ studyList, onSelectRecipe }) {
+function EquipmentListView({ studyList, onSelectRecipe, onSelectRecipeWithTool }) {
   const [activeSubTab, setActiveSubTab] = useState('all'); // 'all' (전체 체크리스트) | 'byItem' (품목별)
   const QNET_DEFAULT_ITEMS = [
     '계산기',
@@ -1275,9 +1275,12 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
       {/* 2. 제품(품목)별 준비물 화면 */}
       {activeSubTab === 'byItem' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>💡</span>
-            <span>품목명을 누르면 해당 품목의 공부노트로 이동합니다.</span>
+          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+            <span style={{ lineHeight: '1.4' }}>💡</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.4' }}>
+              <span>품목명을 누르면 해당 노트로 이동</span>
+              <span>준비물을 누르면 해당 노트로 이동</span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1324,6 +1327,7 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                       {info.tools.map((t, idx) => (
                         <span
                           key={idx}
+                          onClick={() => onSelectRecipeWithTool ? onSelectRecipeWithTool(item.id, t) : onSelectRecipe(item.id)}
                           style={{
                             backgroundColor: '#e0f2fe',
                             color: '#0369a1',
@@ -1331,8 +1335,11 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
                             padding: '2px 8px',
                             borderRadius: '12px',
                             fontSize: '11.5px',
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            userSelect: 'none'
                           }}
+                          title={`클릭 시 [${t}]가 사용되는 공정 단계로 이동`}
                         >
                           {t}
                         </span>
@@ -1352,8 +1359,8 @@ function EquipmentListView({ studyList, onSelectRecipe }) {
 // ----------------------------------------------------
 // 🧭 [컴포넌트] 공정플로우 뷰
 // ----------------------------------------------------
-function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenEquipmentView }) {
-  const [activeStep, setActiveStep] = useState(0);
+function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenEquipmentView, initialStep = 0, highlightWord = '' }) {
+  const [activeStep, setActiveStep] = useState(initialStep);
   const stepRefs = useRef([]);
 
   const steps = useMemo(() => {
@@ -1423,8 +1430,16 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenE
   }, [contentData]);
 
   useEffect(() => {
-    setActiveStep(0);
-  }, [contentData, mode, itemId]);
+    const target = (typeof initialStep === 'number' && initialStep >= 0) ? initialStep : 0;
+    setActiveStep(target);
+    if (stepRefs.current[target]) {
+      stepRefs.current[target].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [contentData, mode, itemId, initialStep]);
 
   if (steps.length === 0) return null;
 
@@ -1606,7 +1621,7 @@ function StepFlowView({ contentData, renderFormattedNotes, mode, itemId, onOpenE
               </div>
 
               <div style={{ minHeight: '40px' }}>
-                {renderFormattedNotes(step.body)}
+                {renderFormattedNotes(step.body, highlightWord)}
               </div>
             </div>
           );
@@ -2039,6 +2054,8 @@ function App() {
   const [hiddenState, setHiddenState] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const [targetStepIndex, setTargetStepIndex] = useState(0); // ✨ 도구 클릭 시 이동할 공정 단계
+  const [highlightWord, setHighlightWord] = useState(''); // ✨ 검색/클릭된 도구 단어 깜빡임 강조 상태
   const [hasVideoAccess, setHasVideoAccess] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const SECRET_ACCESS_KEY = 'cookie2026';
@@ -2133,10 +2150,46 @@ function App() {
 
   const currentItem = studyList[currentIndex] || studyList[0];
 
+  // 도구가 가장 먼저 등장하는 공정(단계 index) 검색 헬퍼
+  const findFirstStepIndexByTool = (recipe, toolName) => {
+    if (!recipe || !toolName) return 0;
+    const content = recipe.summary || recipe.keyPoint || '';
+    let text = Array.isArray(content)
+      ? content.map(item => (typeof item === 'string' ? item : item.text)).join('\n')
+      : String(content);
+
+    text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
+    const rawBlocks = text.split(/(?=###\s+|(?<=\n)\[\d+(?:단계)?\])/g).filter(b => b.trim());
+
+    for (let idx = 0; idx < rawBlocks.length; idx++) {
+      if (rawBlocks[idx].includes(toolName)) {
+        return idx;
+      }
+    }
+    return 0;
+  };
+
   const handleSelectRecipeFromList = (targetId) => {
     const targetIdx = studyList.findIndex(item => item.id === targetId);
     if (targetIdx !== -1) {
       setCurrentIndex(targetIdx);
+    }
+    setTargetStepIndex(0);
+    setHiddenState({});
+    setMode('study');
+  };
+
+  // ✨ 도구를 클릭했을 때 해당 품목과 해당 단계로 직행하며 단어를 반짝이게 하는 핸들러
+  const handleSelectRecipeWithTool = (targetId, toolName) => {
+    const targetIdx = studyList.findIndex(item => item.id === targetId);
+    if (targetIdx !== -1) {
+      setCurrentIndex(targetIdx);
+      const stepIdx = findFirstStepIndexByTool(studyList[targetIdx], toolName);
+      setTargetStepIndex(stepIdx);
+      setHighlightWord(toolName);
+      setTimeout(() => {
+        setHighlightWord('');
+      }, 3000);
     }
     setHiddenState({});
     setMode('study');
@@ -2144,6 +2197,8 @@ function App() {
 
   const changeItem = (newIndex) => {
     setCurrentIndex(newIndex);
+    setTargetStepIndex(0);
+    setHighlightWord('');
     setHiddenState({});
   };
 
@@ -2205,13 +2260,45 @@ function App() {
     return typeof textData === 'string' ? textData : textData.text;
   };
 
-  const renderFormattedNotes = (keyPoints) => {
+  const renderFormattedNotes = (keyPoints, activeHighlight = '') => {
     let text = Array.isArray(keyPoints)
       ? keyPoints.map(kp => renderPlainText(kp)).join('\n')
       : String(keyPoints);
 
     text = text.replace(/<br\s*\/?>/gi, '\n').replace(/\\n/g, '\n');
     const lines = text.split('\n');
+
+    // 검색 단어 강조 래퍼 함수 (반짝반짝 애니메이션)
+    const wrapHighlight = (elementOrString, keyPrefix) => {
+      if (!activeHighlight || !activeHighlight.trim()) return elementOrString;
+      if (typeof elementOrString !== 'string') return elementOrString;
+      if (!elementOrString.includes(activeHighlight)) return elementOrString;
+
+      const subParts = elementOrString.split(activeHighlight);
+      return subParts.reduce((acc, curr, sIdx) => {
+        if (sIdx === 0) return [curr];
+        return [
+          ...acc,
+          <span
+            key={`${keyPrefix}-hl-${sIdx}`}
+            className="highlight-flash"
+            style={{
+              backgroundColor: '#fde047',
+              color: '#854d0e',
+              padding: '1px 4px',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              boxShadow: '0 0 8px #f59e0b',
+              animation: 'blinkGlow 0.8s ease-in-out infinite alternate',
+              display: 'inline-block'
+            }}
+          >
+            {activeHighlight}
+          </span>,
+          curr
+        ];
+      }, []);
+    };
 
     // 커스텀 마크다운 인라인 파서: **강조**, ~취소~, ::주황색::, ==배경색==, <u>밑줄</u>, _밑줄_
     const formatCustomMarkdown = (content) => {
@@ -2220,24 +2307,30 @@ function App() {
 
       return parts.filter(Boolean).map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>{part.slice(2, -2)}</strong>;
+          const inner = part.slice(2, -2);
+          return <strong key={i} style={{ color: '#713f12', fontWeight: 'bold' }}>{wrapHighlight(inner, `b-${i}`)}</strong>;
         }
         if (part.startsWith('~') && part.endsWith('~')) {
-          return <span key={i} style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{part.slice(1, -1)}</span>;
+          const inner = part.slice(1, -1);
+          return <span key={i} style={{ textDecoration: 'line-through', color: '#94a3b8' }}>{wrapHighlight(inner, `d-${i}`)}</span>;
         }
         if (part.startsWith('::') && part.endsWith('::')) {
-          return <span key={i} style={{ color: '#ea580c', fontWeight: 'bold' }}>{part.slice(2, -2)}</span>;
+          const inner = part.slice(2, -2);
+          return <span key={i} style={{ color: '#ea580c', fontWeight: 'bold' }}>{wrapHighlight(inner, `o-${i}`)}</span>;
         }
         if (part.startsWith('==') && part.endsWith('==')) {
-          return <mark key={i} style={{ backgroundColor: '#fef08a', color: '#713f12', padding: '1px 3px', borderRadius: '3px' }}>{part.slice(2, -2)}</mark>;
+          const inner = part.slice(2, -2);
+          return <mark key={i} style={{ backgroundColor: '#fef08a', color: '#713f12', padding: '1px 3px', borderRadius: '3px' }}>{wrapHighlight(inner, `m-${i}`)}</mark>;
         }
         if (part.startsWith('<u>') && part.endsWith('</u>')) {
-          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(3, -4)}</u>;
+          const inner = part.slice(3, -4);
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{wrapHighlight(inner, `u-${i}`)}</u>;
         }
         if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
-          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{part.slice(1, -1)}</u>;
+          const inner = part.slice(1, -1);
+          return <u key={i} style={{ textDecoration: 'underline', textUnderlineOffset: '3px', color: '#0369a1', fontWeight: '600' }}>{wrapHighlight(inner, `under-${i}`)}</u>;
         }
-        return part;
+        return <React.Fragment key={i}>{wrapHighlight(part, `txt-${i}`)}</React.Fragment>;
       });
     };
 
@@ -2464,25 +2557,28 @@ function App() {
     return clean ? `${clean}℃` : '-';
   };
 
-  // 오븐온도 포맷터: "180 / 160" -> "180℃ / 160℃", "180 ~ 160" -> "180℃ ~ 160℃"
+  // 오븐온도 포맷터: 기호 정리 후 구분자(/, ->) 주변에 널널한 공백 유지 및 맨 끝에만 ℃ 표기
   const displayOven = (o) => {
     if (!o || o.trim() === '-' || o.trim() === '') return '레시피 참조';
-    let clean = String(o).replace(/℃/g, '').trim();
-    if (clean.includes('/')) {
-      const [up, down] = clean.split('/').map(v => v.trim());
-      return `${up}℃ / ${down}℃`;
-    }
-    if (clean.includes('~')) {
-      const [up, down] = clean.split('~').map(v => v.trim());
-      return `${up}℃ ~ ${down}℃`;
-    }
+    const clean = String(o)
+      .replace(/℃/g, '')
+      .replace(/\s*\/\s*/g, ' / ')
+      .replace(/\s*->\s*/g, ' -> ')
+      .replace(/\s*→\s*/g, ' -> ')
+      .replace(/\s*~\s*/g, ' ~ ')
+      .trim();
     return `${clean}℃`;
   };
 
-  // 굽기시간 포맷터: "25" -> "25분", "25~30" -> "25~30분"
+  // 굽기시간 포맷터: 기호 정리 후 구분자(~, ->) 주변에 널널한 공백 유지 및 맨 끝에만 분 표기
   const displayTime = (b) => {
     if (!b || b.trim() === '-' || b.trim() === '') return '레시피 참조';
-    const clean = String(b).replace(/분/g, '').trim();
+    const clean = String(b)
+      .replace(/분/g, '')
+      .replace(/\s*~\s*/g, ' ~ ')
+      .replace(/\s*->\s*/g, ' -> ')
+      .replace(/\s*→\s*/g, ' -> ')
+      .trim();
     return `${clean}분`;
   };
 
@@ -2684,6 +2780,7 @@ function App() {
         <EquipmentListView 
           studyList={studyList} 
           onSelectRecipe={handleSelectRecipeFromList}
+          onSelectRecipeWithTool={handleSelectRecipeWithTool}
         />
       )}
 
@@ -3090,12 +3187,21 @@ function App() {
                         width: '100%', 
                         boxSizing: 'border-box' 
                       }}>
+                        {/* 반짝임 애니메이션 키프레임 */}
+                        <style>{`
+                          @keyframes blinkGlow {
+                            0% { transform: scale(1); box-shadow: 0 0 4px #f59e0b; }
+                            100% { transform: scale(1.08); box-shadow: 0 0 14px #eab308, 0 0 6px #f59e0b; }
+                          }
+                        `}</style>
                         <StepFlowView 
                           contentData={summaryContent} 
                           renderFormattedNotes={renderFormattedNotes} 
                           mode={mode}
                           itemId={item.id}
                           onOpenEquipmentView={() => setMode('equipment')}
+                          initialStep={targetStepIndex}
+                          highlightWord={highlightWord}
                         />
                       </div>
                     </div>
@@ -3130,6 +3236,12 @@ function App() {
                         {itemTools.map((tool, tIdx) => (
                           <span
                             key={tIdx}
+                            onClick={() => {
+                              const stepIdx = findFirstStepIndexByTool(item, tool);
+                              setTargetStepIndex(stepIdx);
+                              setHighlightWord(tool);
+                              setTimeout(() => setHighlightWord(''), 3000);
+                            }}
                             style={{
                               backgroundColor: '#e0f2fe',
                               color: '#0369a1',
@@ -3138,8 +3250,11 @@ function App() {
                               borderRadius: '12px',
                               fontSize: '11.5px',
                               fontWeight: '600',
-                              lineHeight: '1.2'
+                              lineHeight: '1.2',
+                              cursor: 'pointer',
+                              userSelect: 'none'
                             }}
+                            title={`클릭 시 [${tool}]이(가) 처음 나오는 공정으로 이동`}
                           >
                             {tool}
                           </span>
