@@ -146,7 +146,7 @@ export default async function handler(request, response) {
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
       if (id) {
-        const updateResult = await sql`
+        await sql`
           UPDATE recipes
           SET 
             category = ${categoryVal},
@@ -167,17 +167,7 @@ export default async function handler(request, response) {
             is_summary_published = ${isSummaryPublished},
             is_detail_published = ${isDetailPublished}
           WHERE item_id = ${id};
-        RETURNING *;
         `;
-
-        // 🔍 실제 실행된 결과 및 변수 역추적용 데이터 반환
-        return response.status(200).json({
-          debug_target_id: id,
-          debug_target_id_type: typeof id,
-          debug_received_mnemonic: mnemonic,
-          debug_updated_rows_count: updateResult.length,
-          debug_updated_data: updateResult
-        });
       } else {
         // 새 item_id 생성 (가장 큰 id + 1)
         const maxResult = await sql`SELECT COALESCE(MAX(item_id), 0) + 1 AS next_id FROM recipes;`;
