@@ -1729,11 +1729,11 @@ function AllItemListView({ studyList, onSelectRecipe }) {
     if (parts.length > 1) {
       return parts.map(p => {
         const clean = p.replace(/\s*\/\s*/g, ' / ').trim();
-        return `${clean}℃`;
+        return /[()]/.test(clean) ? clean : `${clean}℃`;
       });
     }
     const clean = raw.replace(/\s*\/\s*/g, ' / ').trim();
-    return `${clean}℃`;
+    return /[()]/.test(clean) ? clean : `${clean}℃`;
   };
 
   const formatTime = (text) => {
@@ -2924,11 +2924,11 @@ function App() {
     if (parts.length > 1) {
       return parts.map(p => {
         const clean = p.replace(/\s*\/\s*/g, ' / ').trim();
-        return `${clean}℃`;
+        return /[()]/.test(clean) ? clean : `${clean}℃`;
       });
     }
     const clean = raw.replace(/\s*\/\s*/g, ' / ').trim();
-    return `${clean}℃`;
+    return /[()]/.test(clean) ? clean : `${clean}℃`;
   };
 
   // 굽기시간 포맷터: 2단계(->) 분리 및 각 줄마다 분 부착
