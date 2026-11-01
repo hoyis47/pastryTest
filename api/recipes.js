@@ -38,7 +38,11 @@ export default async function handler(request, response) {
           summary TEXT,
           detail TEXT,
           is_summary_published BOOLEAN DEFAULT false,
-          is_detail_published BOOLEAN DEFAULT false
+          is_detail_published BOOLEAN DEFAULT false,
+          sugar_method TEXT DEFAULT '1',
+          egg_method TEXT DEFAULT '1',
+          shock_method TEXT DEFAULT '0',
+          cooling_method TEXT DEFAULT '2'
         );
       `;
 
@@ -58,6 +62,10 @@ export default async function handler(request, response) {
           mixing_type,
           is_warmed,
           is_sacrifice,
+          sugar_method,
+          egg_method,
+          shock_method,
+          cooling_method,
           videos,
           summary,
           detail,
@@ -87,6 +95,10 @@ export default async function handler(request, response) {
         mixingType: row.mixing_type,
         isWarmed: row.is_warmed,
         isSacrifice: row.is_sacrifice,
+        sugarMethod: row.sugar_method,
+        eggMethod: row.egg_method,
+        shockMethod: row.shock_method,
+        coolingMethod: row.cooling_method,
         videos: row.videos || [],
         // 비공개 상태인 경우 일반 뷰에서는 빈 문자열 처리
         summary: row.is_summary_published ? row.summary : '',
@@ -117,6 +129,10 @@ export default async function handler(request, response) {
         mixingType,
         isWarmed,
         isSacrifice,
+        sugarMethod,
+        eggMethod,
+        shockMethod,
+        coolingMethod,
         videos,
         summary,
         detail,
@@ -141,6 +157,10 @@ export default async function handler(request, response) {
       const mixingTypeVal = mixingType || '수작업';
       const isWarmedVal = String(isWarmed ?? '0');
       const isSacrificeVal = String(isSacrifice ?? '0');
+      const sugarMethodVal = String(sugarMethod ?? '1');
+      const eggMethodVal = String(eggMethod ?? '1');
+      const shockMethodVal = String(shockMethod ?? '0');
+      const coolingMethodVal = String(coolingMethod ?? '2');
       const videosJson = JSON.stringify(videos || []);
 
       // 이미 있는 품목이면 UPDATE, 새 품목이면 INSERT
@@ -161,6 +181,10 @@ export default async function handler(request, response) {
             mixing_type = ${mixingTypeVal},
             is_warmed = ${isWarmedVal},
             is_sacrifice = ${isSacrificeVal},
+            sugar_method = ${sugarMethodVal},
+            egg_method = ${eggMethodVal},
+            shock_method = ${shockMethodVal},
+            cooling_method = ${coolingMethodVal},
             videos = ${videosJson}::jsonb,
             summary = ${summary},
             detail = ${detail},
@@ -177,10 +201,12 @@ export default async function handler(request, response) {
           INSERT INTO recipes (
             item_id, category, title, mixing_method, dough_temp, specific_gravity,
             oven_temp, baking_time, mnemonic, note, mixing_type, is_warmed, is_sacrifice,
+            sugar_method, egg_method, shock_method, cooling_method,
             videos, summary, detail, is_summary_published, is_detail_published
           ) VALUES (
             ${nextId}, ${categoryVal}, ${title}, ${mixingMethod}, ${doughTemp}, ${specificGravity},
             ${ovenTemp}, ${bakingTime}, ${mnemonic}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
+            ${sugarMethodVal}, ${eggMethodVal}, ${shockMethodVal}, ${coolingMethodVal},
             ${videosJson}::jsonb, ${summary}, ${detail}, ${isSummaryPublished}, ${isDetailPublished}
           );
         `;

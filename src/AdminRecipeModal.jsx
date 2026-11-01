@@ -18,6 +18,10 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
     mixingType: '수작업',
     isWarmed: '0',
     isSacrifice: '0',
+    sugarMethod: '1',
+    eggMethod: '1',
+    shockMethod: '0',
+    coolingMethod: '2',
     videos: [{ title: '', url: '' }],
     summary: '',
     detail: '',
@@ -52,6 +56,10 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         mixingType: targetRecipe.mixingType || '수작업',
         isWarmed: String(targetRecipe.isWarmed || '0'),
         isSacrifice: String(targetRecipe.isSacrifice || '0'),
+        sugarMethod: String(targetRecipe.sugarMethod ?? '1'),
+        eggMethod: String(targetRecipe.eggMethod ?? '1'),
+        shockMethod: String(targetRecipe.shockMethod ?? '0'),
+        coolingMethod: String(targetRecipe.coolingMethod ?? '2'),
         videos: initialVideos,
         summary: targetRecipe.rawSummary !== undefined ? targetRecipe.rawSummary : (targetRecipe.summary || ''),
         detail: targetRecipe.rawDetail !== undefined ? targetRecipe.rawDetail : (targetRecipe.detail || ''),
@@ -67,6 +75,10 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         mixingType: '수작업',
         isWarmed: '0',
         isSacrifice: '0',
+        sugarMethod: '1',
+        eggMethod: '1',
+        shockMethod: '0',
+        coolingMethod: '2',
         videos: [{ title: '', url: '' }],
         summary: '',
         detail: '',
@@ -401,18 +413,18 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
               </select>
             </div>
             <div>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>가온법 여부</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>가스렌지</span>
               <select
                 value={formData.isWarmed}
                 onChange={e => setFormData({ ...formData, isWarmed: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">비가온 (미적용)</option>
-                <option value="1">가온 (적용)</option>
+                <option value="0">가스렌지 안씀</option>
+                <option value="1">가스렌지 사용</option>
               </select>
             </div>
             <div>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>희생반죽 여부</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>희생반죽</span>
               <select
                 value={formData.isSacrifice}
                 onChange={e => setFormData({ ...formData, isSacrifice: e.target.value })}
@@ -420,6 +432,57 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
               >
                 <option value="0">사용안함</option>
                 <option value="1">사용함</option>
+              </select>
+            </div>
+          </div>
+        {/* ✨ 설탕넣기 / 계란넣기 / 쇼크주기 / 팬에서 식히기 세분화 선택 필드 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1' }}>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>설탕넣기</span>
+              <select
+                value={formData.sugarMethod}
+                onChange={e => setFormData({ ...formData, sugarMethod: e.target.value })}
+                style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
+              >
+                <option value="0">0. 설탕없음</option>
+                <option value="1">1. 한번에 넣기</option>
+                <option value="2">2. 2~3회 넣기</option>
+              </select>
+            </div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>계란넣기</span>
+              <select
+                value={formData.eggMethod}
+                onChange={e => setFormData({ ...formData, eggMethod: e.target.value })}
+                style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
+              >
+                <option value="0">0. 계란없음</option>
+                <option value="1">1. 한번에 넣기</option>
+                <option value="2">2. 2~3회 넣기</option>
+                <option value="3">3. 5~6회 넣기</option>
+              </select>
+            </div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>쇼크주기</span>
+              <select
+                value={formData.shockMethod}
+                onChange={e => setFormData({ ...formData, shockMethod: e.target.value })}
+                style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
+              >
+                <option value="0">0. 해당없음</option>
+                <option value="1">1. 쇼크 주기</option>
+                <option value="2">2. 쇼크 안주기</option>
+              </select>
+            </div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>팬에서 식히기</span>
+              <select
+                value={formData.coolingMethod}
+                onChange={e => setFormData({ ...formData, coolingMethod: e.target.value })}
+                style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
+              >
+                <option value="1">1. 팬에서 식히기</option>
+                <option value="2">2. 바로꺼내기</option>
               </select>
             </div>
           </div>

@@ -1791,6 +1791,34 @@ function AllItemListView({ studyList, onSelectRecipe }) {
     return '사용안함';
   };
 
+  const getSugarType = (item) => {
+    const val = String(item.sugarMethod ?? '1').trim();
+    if (val === '0') return '설탕없음';
+    if (val === '2') return '2~3회 넣기';
+    return '한번에 넣기';
+  };
+
+  const getEggType = (item) => {
+    const val = String(item.eggMethod ?? '1').trim();
+    if (val === '0') return '계란없음';
+    if (val === '2') return '2~3회 넣기';
+    if (val === '3') return '5~6회 넣기';
+    return '한번에 넣기';
+  };
+
+  const getShockType = (item) => {
+    const val = String(item.shockMethod ?? '0').trim();
+    if (val === '1') return '쇼크 주기';
+    if (val === '2') return '쇼크 안주기';
+    return '해당없음';
+  };
+
+  const getCoolingType = (item) => {
+    const val = String(item.coolingMethod ?? '2').trim();
+    if (val === '1') return '팬에서 식히기';
+    return '바로꺼내기';
+  };
+
   const methodGroups = useMemo(() => {
     const groups = {};
     studyList.forEach(item => {
@@ -2021,15 +2049,22 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         display: 'flex',
         gap: '6px',
         width: '100%',
-        justifyContent: 'space-between',
-        paddingBottom: '2px',
-        boxSizing: 'border-box'
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        paddingBottom: '4px',
+        boxSizing: 'border-box',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
       }}>
         {[
           { key: '반죽법', label: '반죽법' },
           { key: '수작업', label: '수작업' },
-          { key: '가온법', label: '가온법' },
-          { key: '희생반죽', label: '희생반죽' }
+          { key: '가온법', label: '가스렌지' },
+          { key: '희생반죽', label: '희생반죽' },
+          { key: '설탕넣기', label: '설탕넣기' },
+          { key: '계란넣기', label: '계란넣기' },
+          { key: '쇼크주기', label: '쇼크주기' },
+          { key: '팬식히기', label: '팬식히기' }
         ].map((tab) => {
           const isSelected = activeCategory === tab.key;
 
@@ -2038,12 +2073,13 @@ function AllItemListView({ studyList, onSelectRecipe }) {
               key={tab.key}
               onClick={() => setActiveCategory(tab.key)}
               style={{
-                flex: 1,
+                flex: '0 0 auto',
+                minWidth: '60px',
                 border: isSelected ? '1.5px solid #0f766e' : '1px solid #bbf7d0',
                 backgroundColor: isSelected ? '#0f766e' : '#ffffff',
                 color: isSelected ? '#ffffff' : '#334155',
                 borderRadius: '8px',
-                padding: '7px 4px',
+                padding: '7px 10px',
                 fontSize: '12.5px',
                 fontWeight: isSelected ? 'bold' : '500',
                 cursor: 'pointer',
@@ -2148,8 +2184,8 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {renderTreeFolderSection('가온', warmedItems.length, warmedItems, true)}
-            {renderTreeFolderSection('비가온', unWarmedItems.length, unWarmedItems, false)}
+            {renderTreeFolderSection('가스렌지 사용', warmedItems.length, warmedItems, true)}
+            {renderTreeFolderSection('가스렌지 안씀', unWarmedItems.length, unWarmedItems, false)}
             {otherItems.length > 0 && renderTreeFolderSection('그외', otherItems.length, otherItems, false)}
           </div>
         );
@@ -2165,6 +2201,61 @@ function AllItemListView({ studyList, onSelectRecipe }) {
             {renderTreeFolderSection('희생반죽 사용함', sacrificeItems.length, sacrificeItems, true)}
             {renderTreeFolderSection('희생반죽 사용안함', noSacrificeItems.length, noSacrificeItems, false)}
             {otherItems.length > 0 && renderTreeFolderSection('그외', otherItems.length, otherItems, false)}
+          </div>
+        );
+      })()}
+    {activeCategory === '설탕넣기' && (() => {
+        const noSugar = studyList.filter(item => getSugarType(item) === '설탕없음');
+        const onceSugar = studyList.filter(item => getSugarType(item) === '한번에 넣기');
+        const splitSugar = studyList.filter(item => getSugarType(item) === '2~3회 넣기');
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {renderTreeFolderSection('한번에 넣기', onceSugar.length, onceSugar, true)}
+            {renderTreeFolderSection('2~3회 넣기', splitSugar.length, splitSugar, true)}
+            {noSugar.length > 0 && renderTreeFolderSection('설탕없음', noSugar.length, noSugar, false)}
+          </div>
+        );
+      })()}
+
+      {activeCategory === '계란넣기' && (() => {
+        const noEgg = studyList.filter(item => getEggType(item) === '계란없음');
+        const onceEgg = studyList.filter(item => getEggType(item) === '한번에 넣기');
+        const split23 = studyList.filter(item => getEggType(item) === '2~3회 넣기');
+        const split56 = studyList.filter(item => getEggType(item) === '5~6회 넣기');
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {renderTreeFolderSection('한번에 넣기', onceEgg.length, onceEgg, true)}
+            {renderTreeFolderSection('2~3회 넣기', split23.length, split23, true)}
+            {renderTreeFolderSection('5~6회 넣기', split56.length, split56, true)}
+            {noEgg.length > 0 && renderTreeFolderSection('계란없음', noEgg.length, noEgg, false)}
+          </div>
+        );
+      })()}
+
+      {activeCategory === '쇼크주기' && (() => {
+        const doShock = studyList.filter(item => getShockType(item) === '쇼크 주기');
+        const noShock = studyList.filter(item => getShockType(item) === '쇼크 안주기');
+        const naShock = studyList.filter(item => getShockType(item) === '해당없음');
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {renderTreeFolderSection('쇼크 주기', doShock.length, doShock, true)}
+            {renderTreeFolderSection('쇼크 안주기', noShock.length, noShock, false)}
+            {naShock.length > 0 && renderTreeFolderSection('해당없음', naShock.length, naShock, false)}
+          </div>
+        );
+      })()}
+
+      {activeCategory === '팬식히기' && (() => {
+        const coolInPan = studyList.filter(item => getCoolingType(item) === '팬에서 식히기');
+        const coolOut = studyList.filter(item => getCoolingType(item) === '바로꺼내기');
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {renderTreeFolderSection('팬에서 식히기', coolInPan.length, coolInPan, true)}
+            {renderTreeFolderSection('바로꺼내기', coolOut.length, coolOut, false)}
           </div>
         );
       })()}

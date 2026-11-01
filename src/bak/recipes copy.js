@@ -53,6 +53,7 @@ export default async function handler(request, response) {
           specific_gravity,
           oven_temp,
           baking_time,
+          mnemonic,
           note,
           mixing_type,
           is_warmed,
@@ -80,6 +81,7 @@ export default async function handler(request, response) {
           specificGravity: row.specific_gravity,
           ovenTemp: row.oven_temp,
           bakingTime: row.baking_time,
+          mnemonic: row.mnemonic,
           note: row.note
         },
         mixingType: row.mixing_type,
@@ -134,6 +136,7 @@ export default async function handler(request, response) {
       const specificGravity = spec?.specificGravity || '-';
       const ovenTemp = spec?.ovenTemp || '-';
       const bakingTime = spec?.bakingTime || '-';
+      const mnemonic = spec?.mnemonic || '';
       const note = spec?.note || '';
       const mixingTypeVal = mixingType || '수작업';
       const isWarmedVal = String(isWarmed ?? '0');
@@ -153,6 +156,7 @@ export default async function handler(request, response) {
             specific_gravity = ${specificGravity},
             oven_temp = ${ovenTemp},
             baking_time = ${bakingTime},
+            mnemonic = ${mnemonic},
             note = ${note},
             mixing_type = ${mixingTypeVal},
             is_warmed = ${isWarmedVal},
@@ -172,11 +176,11 @@ export default async function handler(request, response) {
         await sql`
           INSERT INTO recipes (
             item_id, category, title, mixing_method, dough_temp, specific_gravity,
-            oven_temp, baking_time, note, mixing_type, is_warmed, is_sacrifice,
+            oven_temp, baking_time, mnemonic, note, mixing_type, is_warmed, is_sacrifice,
             videos, summary, detail, is_summary_published, is_detail_published
           ) VALUES (
             ${nextId}, ${categoryVal}, ${title}, ${mixingMethod}, ${doughTemp}, ${specificGravity},
-            ${ovenTemp}, ${bakingTime}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
+            ${ovenTemp}, ${bakingTime}, ${mnemonic}, ${note}, ${mixingTypeVal}, ${isWarmedVal}, ${isSacrificeVal},
             ${videosJson}::jsonb, ${summary}, ${detail}, ${isSummaryPublished}, ${isDetailPublished}
           );
         `;
