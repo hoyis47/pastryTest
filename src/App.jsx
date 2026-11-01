@@ -2005,16 +2005,28 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '1px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: '1px' }}>
                         <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-start' }}>
                           <span style={{ color: '#64748b', fontSize: '10.5px', marginTop: '1px' }}>오븐:</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                             {Array.isArray(oven) ? (
-                              oven.map((oItem, oIdx) => (
-                                <span key={oIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
-                                  {oItem}
-                                </span>
-                              ))
+                              oven.map((oItem, oIdx) => {
+                                const match = oItem.match(/^(.*?)\s*(\(.*?\))$/);
+                                if (match) {
+                                  const mainPart = match[1].replace(/\s*\/\s*/g, '/');
+                                  return (
+                                    <span key={oIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
+                                      {mainPart}
+                                      <span style={{ fontSize: '9.5px', whiteSpace: 'nowrap' }}>{match[2]}</span>
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span key={oIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
+                                    {oItem}
+                                  </span>
+                                );
+                              })
                             ) : (
                               <span style={{ color: '#1e293b', fontWeight: '600' }}>{oven}</span>
                             )}
@@ -2024,13 +2036,29 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                           <span style={{ color: '#64748b', fontSize: '10.5px', marginTop: '1px' }}>시간:</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                             {Array.isArray(time) ? (
-                              time.map((tItem, tIdx) => (
-                                <span key={tIdx} style={{ color: '#1e293b', fontWeight: '600', lineHeight: '1.25' }}>
-                                  {tItem}
-                                </span>
-                              ))
+                              time.map((tItem, tIdx) => {
+                                const cleanTime = tItem.replace(/\s*~\s*/g, '~');
+                                const isRange = cleanTime.includes('~');
+                                const isTotal = cleanTime.includes('총');
+                                return (
+                                  <span
+                                    key={tIdx}
+                                    style={{
+                                      color: isTotal ? '#64748b' : '#1e293b',
+                                      fontWeight: isTotal ? 'normal' : '600',
+                                      lineHeight: '1.25',
+                                      fontSize: isRange ? '10px' : 'inherit',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {cleanTime}
+                                  </span>
+                                );
+                              })
                             ) : (
-                              <span style={{ color: '#1e293b', fontWeight: '600' }}>{time}</span>
+                              <span style={{ color: time.includes('총') ? '#64748b' : '#1e293b', fontWeight: time.includes('총') ? 'normal' : '600' }}>
+                                {time.replace(/\s*~\s*/g, '~')}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -2946,6 +2974,22 @@ function App() {
     return `${clean}분`;
   };
 
+  // 괄호가 포함된 경우 슬래시(/) 공백을 없애고 괄호 크기를 작게 렌더링하는 헬퍼 함수
+  const renderOvenLine = (text) => {
+    if (!text) return null;
+    const match = text.match(/^(.*?)\s*(\(.*?\))$/);
+    if (match) {
+      const mainPart = match[1].replace(/\s*\/\s*/g, '/');
+      return (
+        <span>
+          {mainPart}
+          <span style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>{match[2]}</span>
+        </span>
+      );
+    }
+    return <span>{text}</span>;
+  };
+
   const gravityData = parseSpecificGravity(currentItem?.spec?.specificGravity);
 
   return (
@@ -3385,9 +3429,9 @@ function App() {
                     {(() => {
                       const ovenVal = displayOven(item.spec.ovenTemp);
                       return Array.isArray(ovenVal) ? (
-                        ovenVal.map((v, i) => <span key={i} style={{ lineHeight: '1.25' }}>{v}</span>)
+                        ovenVal.map((v, i) => <span key={i} style={{ lineHeight: '1.25' }}>{renderOvenLine(v)}</span>)
                       ) : (
-                        <span>{ovenVal}</span>
+                        renderOvenLine(ovenVal)
                       );
                     })()}
                   </div>
@@ -3400,9 +3444,27 @@ function App() {
                     {(() => {
                       const timeVal = displayTime(item.spec.bakingTime);
                       return Array.isArray(timeVal) ? (
-                        timeVal.map((v, i) => <span key={i} style={{ lineHeight: '1.25' }}>{v}</span>)
+                        timeVal.map((v, i) => {
+                          const cleanV = v.replace(/\s*~\s*/g, '~');
+                          const isTotal = cleanV.includes('총');
+                          return (
+                            <span
+                              key={i}
+                              style={{
+                                lineHeight: '1.25',
+                                color: isTotal ? '#64748b' : 'inherit',
+                                fontWeight: isTotal ? 'normal' : 'bold',
+                                fontSize: isTotal ? '14px' : 'inherit'
+                              }}
+                            >
+                              {cleanV}
+                            </span>
+                          );
+                        })
                       ) : (
-                        <span>{timeVal}</span>
+                        <span style={{ color: timeVal.includes('총') ? '#64748b' : 'inherit', fontWeight: timeVal.includes('총') ? 'normal' : 'bold' }}>
+                          {timeVal.replace(/\s*~\s*/g, '~')}
+                        </span>
                       );
                     })()}
                   </div>
