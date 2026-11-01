@@ -457,7 +457,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, eggMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">해당 없음</option>
+                <option value="0">계란이 메인</option>
                 <option value="1">한번에 넣기</option>
                 <option value="2">2회에 넣기</option>
                 <option value="3">3회에 넣기</option>
