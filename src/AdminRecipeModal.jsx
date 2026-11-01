@@ -408,7 +408,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
                 <option value="수작업">수작업</option>
-                <option value="기계사용">기계사용</option>
+                <option value="기계사용">기계 사용</option>
                 <option value="그외">그외</option>
               </select>
             </div>
@@ -430,8 +430,8 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, isSacrifice: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">사용안함</option>
-                <option value="1">사용함</option>
+                <option value="0">사용 안함</option>
+                <option value="1">사용 함</option>
               </select>
             </div>
           </div>
@@ -444,7 +444,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, sugarMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">해당없음</option>
+                <option value="0">해당 없음</option>
                 <option value="1">한번에 넣기</option>
                 <option value="2">2회에 넣기</option>
                 <option value="3">3회에 넣기</option>
@@ -457,7 +457,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, eggMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">해당없음</option>
+                <option value="0">해당 없음</option>
                 <option value="1">한번에 넣기</option>
                 <option value="2">2회에 넣기</option>
                 <option value="3">3회에 넣기</option>
@@ -485,7 +485,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
                 <option value="1">팬에서 식히기</option>
-                <option value="2">바로꺼내기</option>
+                <option value="2">바로 꺼내기</option>
               </select>
             </div>
           </div>
