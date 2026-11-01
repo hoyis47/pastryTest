@@ -2074,9 +2074,9 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                                     handleToggleTag(keyword);
                                   }}
                                   style={{
-                                    border: isSelected ? '1px solid #d97706' : '1px solid #fef08a',
-                                    backgroundColor: isSelected ? '#fde047' : '#fef9c3',
-                                    color: isSelected ? '#78350f' : '#854d0e',
+                                    border: isSelected ? '1px solid #334155' : '1px solid #e2e8f0',
+                                    backgroundColor: isSelected ? '#334155' : '#f8fafc',
+                                    color: isSelected ? '#ffffff' : '#334155',
                                     fontWeight: 'normal',
                                     fontSize: '11px',
                                     padding: '1px 6px',
@@ -2098,7 +2098,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                               <span
                                 key={pIdx}
                                 style={{
-                                  color: '#78350f',
+                                  color: '#334155',
                                   fontSize: '11px',
                                   lineHeight: '1.4',
                                   padding: '1px 2px'
@@ -2355,7 +2355,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
             {renderTreeFolderSection('4회에 넣기', splitEgg4.length, splitEgg4, true)}
             {renderTreeFolderSection('5회에 넣기', splitEgg5.length, splitEgg5, true)}
             {renderTreeFolderSection('6회에 넣기', splitEgg6.length, splitEgg6, true)}
-            {renderTreeFolderSection('해당없음', noEgg.length, noEgg, false)}
+            {renderTreeFolderSection('계란이 메인', noEgg.length, noEgg, false)}
           </div>
         );
       })()}
