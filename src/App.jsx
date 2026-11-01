@@ -1829,6 +1829,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
     if (val === '4') return '4회에 넣기';
     if (val === '5') return '5회에 넣기';
     if (val === '6') return '6회에 넣기';
+    if (val === 'many') return '여러번에 넣기';
     return '한번에 넣기';
   };
 
@@ -2345,6 +2346,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         const splitEgg4 = studyList.filter(item => getEggType(item) === '4회에 넣기');
         const splitEgg5 = studyList.filter(item => getEggType(item) === '5회에 넣기');
         const splitEgg6 = studyList.filter(item => getEggType(item) === '6회에 넣기');
+        const splitEggMany = studyList.filter(item => getEggType(item) === '여러번에 넣기');
         const noEgg = studyList.filter(item => getEggType(item) === '해당없음');
 
         return (
@@ -2355,6 +2357,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
             {renderTreeFolderSection('4회에 넣기', splitEgg4.length, splitEgg4, true)}
             {renderTreeFolderSection('5회에 넣기', splitEgg5.length, splitEgg5, true)}
             {renderTreeFolderSection('6회에 넣기', splitEgg6.length, splitEgg6, true)}
+            {renderTreeFolderSection('여러번에 넣기', splitEggMany.length, splitEggMany, true)}
             {renderTreeFolderSection('계란이 메인', noEgg.length, noEgg, false)}
           </div>
         );

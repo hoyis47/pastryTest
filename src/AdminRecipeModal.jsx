@@ -464,6 +464,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 <option value="4">4회에 넣기</option>
                 <option value="5">5회에 넣기</option>
                 <option value="6">6회에 넣기</option>
+                <option value="many">여러번에 넣기</option>
               </select>
             </div>
             <div>
