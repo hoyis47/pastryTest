@@ -1793,16 +1793,20 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const getSugarType = (item) => {
     const val = String(item.sugarMethod ?? '1').trim();
-    if (val === '0') return '설탕없음';
-    if (val === '2') return '2~3회 넣기';
+    if (val === '0') return '해당없음';
+    if (val === '2') return '2회에 넣기';
+    if (val === '3') return '3회에 넣기';
     return '한번에 넣기';
   };
 
   const getEggType = (item) => {
     const val = String(item.eggMethod ?? '1').trim();
-    if (val === '0') return '계란없음';
-    if (val === '2') return '2~3회 넣기';
-    if (val === '3') return '5~6회 넣기';
+    if (val === '0') return '해당없음';
+    if (val === '2') return '2회에 넣기';
+    if (val === '3') return '3회에 넣기';
+    if (val === '4') return '4회에 넣기';
+    if (val === '5') return '5회에 넣기';
+    if (val === '6') return '6회에 넣기';
     return '한번에 넣기';
   };
 
@@ -1835,6 +1839,9 @@ function AllItemListView({ studyList, onSelectRecipe }) {
     const borderCol = isPrimary ? '#bbf7d0' : '#e5e7eb';
     const folderTitleColor = isPrimary ? '#0f766e' : '#4b5563';
     const badgeBg = isPrimary ? '#0f766e' : '#9ca3af';
+
+    // ✨ 품목이 0개인 경우 화면에 노출하지 않음
+    if (!items || items.length === 0) return null;
 
     return (
       <div 
@@ -1874,12 +1881,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-          {items.length === 0 ? (
-            <div style={{ padding: '12px 16px', color: '#9ca3af', fontSize: '12px' }}>
-              해당 항목이 없습니다.
-            </div>
-          ) : (
-            items.map((item, idx) => {
+          {items.map((item, idx) => {
               const tempFormatted = formatTemp(item.spec?.doughTemp);
               const gravity = formatGravity(item.spec?.specificGravity);
               const oven = formatOven(item.spec?.ovenTemp);
@@ -2035,8 +2037,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
         </div>
       </div>
     );
@@ -2060,10 +2061,10 @@ function AllItemListView({ studyList, onSelectRecipe }) {
           { key: '수작업', label: '수작업' },
           { key: '가온법', label: '가스렌지' },
           { key: '희생반죽', label: '희생반죽' },
-          { key: '설탕넣기', label: '설탕넣기' },
-          { key: '계란넣기', label: '계란넣기' },
+          { key: '설탕넣기', label: '설탕추가' },
+          { key: '계란넣기', label: '계란추가' },
           { key: '쇼크주기', label: '쇼크주기' },
-          { key: '팬식히기', label: '팬식히기' }
+          { key: '팬식히기', label: '식히기' }
         ].map((tab) => {
           const isSelected = activeCategory === tab.key;
 
@@ -2204,31 +2205,39 @@ function AllItemListView({ studyList, onSelectRecipe }) {
         );
       })()}
     {activeCategory === '설탕넣기' && (() => {
-        const noSugar = studyList.filter(item => getSugarType(item) === '설탕없음');
         const onceSugar = studyList.filter(item => getSugarType(item) === '한번에 넣기');
-        const splitSugar = studyList.filter(item => getSugarType(item) === '2~3회 넣기');
+        const splitSugar2 = studyList.filter(item => getSugarType(item) === '2회에 넣기');
+        const splitSugar3 = studyList.filter(item => getSugarType(item) === '3회에 넣기');
+        const noSugar = studyList.filter(item => getSugarType(item) === '해당없음');
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {renderTreeFolderSection('한번에 넣기', onceSugar.length, onceSugar, true)}
-            {renderTreeFolderSection('2~3회 넣기', splitSugar.length, splitSugar, true)}
-            {noSugar.length > 0 && renderTreeFolderSection('설탕없음', noSugar.length, noSugar, false)}
+            {renderTreeFolderSection('2회에 넣기', splitSugar2.length, splitSugar2, true)}
+            {renderTreeFolderSection('3회에 넣기', splitSugar3.length, splitSugar3, true)}
+            {renderTreeFolderSection('해당없음', noSugar.length, noSugar, false)}
           </div>
         );
       })()}
 
       {activeCategory === '계란넣기' && (() => {
-        const noEgg = studyList.filter(item => getEggType(item) === '계란없음');
         const onceEgg = studyList.filter(item => getEggType(item) === '한번에 넣기');
-        const split23 = studyList.filter(item => getEggType(item) === '2~3회 넣기');
-        const split56 = studyList.filter(item => getEggType(item) === '5~6회 넣기');
+        const splitEgg2 = studyList.filter(item => getEggType(item) === '2회에 넣기');
+        const splitEgg3 = studyList.filter(item => getEggType(item) === '3회에 넣기');
+        const splitEgg4 = studyList.filter(item => getEggType(item) === '4회에 넣기');
+        const splitEgg5 = studyList.filter(item => getEggType(item) === '5회에 넣기');
+        const splitEgg6 = studyList.filter(item => getEggType(item) === '6회에 넣기');
+        const noEgg = studyList.filter(item => getEggType(item) === '해당없음');
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {renderTreeFolderSection('한번에 넣기', onceEgg.length, onceEgg, true)}
-            {renderTreeFolderSection('2~3회 넣기', split23.length, split23, true)}
-            {renderTreeFolderSection('5~6회 넣기', split56.length, split56, true)}
-            {noEgg.length > 0 && renderTreeFolderSection('계란없음', noEgg.length, noEgg, false)}
+            {renderTreeFolderSection('2회에 넣기', splitEgg2.length, splitEgg2, true)}
+            {renderTreeFolderSection('3회에 넣기', splitEgg3.length, splitEgg3, true)}
+            {renderTreeFolderSection('4회에 넣기', splitEgg4.length, splitEgg4, true)}
+            {renderTreeFolderSection('5회에 넣기', splitEgg5.length, splitEgg5, true)}
+            {renderTreeFolderSection('6회에 넣기', splitEgg6.length, splitEgg6, true)}
+            {renderTreeFolderSection('해당없음', noEgg.length, noEgg, false)}
           </div>
         );
       })()}

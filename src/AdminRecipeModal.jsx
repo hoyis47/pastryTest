@@ -438,28 +438,32 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         {/* ✨ 설탕넣기 / 계란넣기 / 쇼크주기 / 팬에서 식히기 세분화 선택 필드 */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1' }}>
             <div>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>설탕넣기</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>설탕추가</span>
               <select
                 value={formData.sugarMethod}
                 onChange={e => setFormData({ ...formData, sugarMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">설탕없음</option>
+                <option value="0">해당없음</option>
                 <option value="1">한번에 넣기</option>
-                <option value="2">2~3회 넣기</option>
+                <option value="2">2회에 넣기</option>
+                <option value="3">3회에 넣기</option>
               </select>
             </div>
             <div>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>계란넣기</span>
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '3px' }}>계란추가</span>
               <select
                 value={formData.eggMethod}
                 onChange={e => setFormData({ ...formData, eggMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">계란없음</option>
+                <option value="0">해당없음</option>
                 <option value="1">한번에 넣기</option>
-                <option value="2">2~3회 넣기</option>
-                <option value="3">5~6회 넣기</option>
+                <option value="2">2회에 넣기</option>
+                <option value="3">3회에 넣기</option>
+                <option value="4">4회에 넣기</option>
+                <option value="5">5회에 넣기</option>
+                <option value="6">6회에 넣기</option>
               </select>
             </div>
             <div>
