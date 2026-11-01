@@ -1694,6 +1694,28 @@ function AllItemListView({ studyList, onSelectRecipe }) {
 
   const [showMnemonic, setShowMnemonic] = useState(true); // ✨ 암기연상법 표시 토글 상태 (기본: 보임)
 
+  const [selectedTag, setSelectedTag] = useState(null); // ✨ 선택된 주의사항 태그 상태
+
+  // 전체 품목의 주의사항(note) 키워드 출현 횟수 집계 (2회 이상만 태깅 대상)
+  const sharedNoteTagCounts = useMemo(() => {
+    const counts = {};
+    (studyList || []).forEach(item => {
+      const note = item?.spec?.note || '';
+      if (!note.trim()) return;
+      const parts = note.split(/[,/]+/).map(s => s.trim()).filter(Boolean);
+      const uniqueInItem = Array.from(new Set(parts));
+      uniqueInItem.forEach(keyword => {
+        counts[keyword] = (counts[keyword] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [studyList]);
+
+  // 태그 클릭 토글 핸들러
+  const handleToggleTag = (tag) => {
+    setSelectedTag(prev => (prev === tag ? null : tag));
+  };
+
   const formatTemp = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '';
     const match = text.match(/\d+/);
@@ -1843,6 +1865,17 @@ function AllItemListView({ studyList, onSelectRecipe }) {
     // ✨ 품목이 0개인 경우 화면에 노출하지 않음
     if (!items || items.length === 0) return null;
 
+    // 선택된 태그가 있을 경우 해당 키워드를 포함한 품목만 필터링
+    const visibleItems = selectedTag
+      ? items.filter(item => {
+          const note = item?.spec?.note || '';
+          const parts = note.split(/[,/]+/).map(s => s.trim());
+          return parts.includes(selectedTag);
+        })
+      : items;
+
+    if (visibleItems.length === 0) return null;
+
     return (
       <div 
         key={title}
@@ -1876,12 +1909,12 @@ function AllItemListView({ studyList, onSelectRecipe }) {
             padding: '1px 7px',
             fontWeight: 'bold'
           }}>
-            {count}
+            {visibleItems.length}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-          {items.map((item, idx) => {
+          {visibleItems.map((item, idx) => {
               const tempFormatted = formatTemp(item.spec?.doughTemp);
               const gravity = formatGravity(item.spec?.specificGravity);
               const oven = formatOven(item.spec?.ovenTemp);
@@ -2019,17 +2052,63 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                         <div style={{ 
                           borderTop: '1px dashed #fde68a', 
                           paddingTop: '5px', 
-                          marginTop: '3px' 
+                          marginTop: '3px',
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: '4px'
                         }}>
-                          <span style={{ 
-                            color: '#92400e', 
-                            fontSize: '11px', 
-                            lineHeight: '1.4', 
-                            wordBreak: 'break-all',
-                            display: 'block'
-                          }}>
-                            {item.spec.note}
-                          </span>
+                          {item.spec.note.split(/[,/]+/).map((rawPart, pIdx) => {
+                            const keyword = rawPart.trim();
+                            if (!keyword) return null;
+                            const isShared = (sharedNoteTagCounts[keyword] || 0) >= 2;
+                            const isSelected = selectedTag === keyword;
+
+                            if (isShared) {
+                              return (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleTag(keyword);
+                                  }}
+                                  style={{
+                                    border: isSelected ? '1.5px solid #ea580c' : '1px solid #fed7aa',
+                                    backgroundColor: isSelected ? '#ffedd5' : '#fff7ed',
+                                    color: isSelected ? '#c2410c' : '#9a3412',
+                                    fontWeight: isSelected ? 'bold' : '600',
+                                    fontSize: '11px',
+                                    padding: '2px 7px',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    boxShadow: isSelected ? '0 1px 4px rgba(234, 88, 12, 0.25)' : 'none',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title={isSelected ? '클릭 시 태그 필터 해제' : `[${keyword}] 포함 품목만 모아보기`}
+                                >
+                                  <span>🏷️</span>
+                                  <span>{keyword}</span>
+                                </button>
+                              );
+                            }
+
+                            return (
+                              <span
+                                key={pIdx}
+                                style={{
+                                  color: '#92400e',
+                                  fontSize: '11px',
+                                  lineHeight: '1.4'
+                                }}
+                              >
+                                {keyword}{pIdx < item.spec.note.split(/[,/]+/).length - 1 ? ',' : ''}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -2071,7 +2150,10 @@ function AllItemListView({ studyList, onSelectRecipe }) {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveCategory(tab.key)}
+              onClick={() => {
+                setActiveCategory(tab.key);
+                setSelectedTag(null); // 상단 대분류 탭 이동 시 태그 필터 자동 초기화
+              }}
               style={{
                 flex: '0 0 auto',
                 minWidth: '60px',
@@ -2094,6 +2176,43 @@ function AllItemListView({ studyList, onSelectRecipe }) {
           );
         })}
       </div>
+
+      {/* ✨ 활성화된 주의사항 태그 필터 알림 배너 */}
+      {selectedTag && (
+        <div style={{
+          backgroundColor: '#fff7ed',
+          border: '1.5px solid #fdba74',
+          borderRadius: '8px',
+          padding: '6px 12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '13px' }}>🏷️</span>
+            <span style={{ fontSize: '12px', color: '#9a3412', fontWeight: 'bold' }}>
+              태그 필터: [{selectedTag}]
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedTag(null)}
+            style={{
+              backgroundColor: '#ea580c',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            ✕ 전체보기
+          </button>
+        </div>
+      )}
 
       <div style={{ 
         display: 'flex', 
