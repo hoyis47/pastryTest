@@ -2056,7 +2056,7 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                           display: 'flex',
                           flexWrap: 'wrap',
                           alignItems: 'center',
-                          gap: '4px'
+                          gap: '5px'
                         }}>
                           {item.spec.note.split(/[,/]+/).map((rawPart, pIdx) => {
                             const keyword = rawPart.trim();
@@ -2074,24 +2074,22 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                                     handleToggleTag(keyword);
                                   }}
                                   style={{
-                                    border: isSelected ? '1.5px solid #ea580c' : '1px solid #fed7aa',
-                                    backgroundColor: isSelected ? '#ffedd5' : '#fff7ed',
-                                    color: isSelected ? '#c2410c' : '#9a3412',
-                                    fontWeight: isSelected ? 'bold' : '600',
+                                    border: isSelected ? '1px solid #d97706' : '1px solid #fef08a',
+                                    backgroundColor: isSelected ? '#fde047' : '#fef9c3',
+                                    color: isSelected ? '#78350f' : '#854d0e',
+                                    fontWeight: 'normal',
                                     fontSize: '11px',
-                                    padding: '2px 7px',
-                                    borderRadius: '12px',
+                                    padding: '1px 6px',
+                                    borderRadius: '6px',
                                     cursor: 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '3px',
-                                    boxShadow: isSelected ? '0 1px 4px rgba(234, 88, 12, 0.25)' : 'none',
+                                    boxShadow: 'none',
                                     transition: 'all 0.15s ease'
                                   }}
-                                  title={isSelected ? '클릭 시 태그 필터 해제' : `[${keyword}] 포함 품목만 모아보기`}
+                                  title={isSelected ? '클릭 시 필터 해제' : `[${keyword}] 포함 품목 모아보기`}
                                 >
-                                  <span>🏷️</span>
-                                  <span>{keyword}</span>
+                                  {keyword}
                                 </button>
                               );
                             }
@@ -2100,9 +2098,10 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                               <span
                                 key={pIdx}
                                 style={{
-                                  color: '#92400e',
+                                  color: '#78350f',
                                   fontSize: '11px',
-                                  lineHeight: '1.4'
+                                  lineHeight: '1.4',
+                                  padding: '1px 2px'
                                 }}
                               >
                                 {keyword}{pIdx < item.spec.note.split(/[,/]+/).length - 1 ? ',' : ''}
