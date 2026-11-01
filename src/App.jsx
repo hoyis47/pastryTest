@@ -1807,10 +1807,9 @@ function AllItemListView({ studyList, onSelectRecipe }) {
   };
 
   const getShockType = (item) => {
-    const val = String(item.shockMethod ?? '0').trim();
-    if (val === '1') return '쇼크 주기';
+    const val = String(item.shockMethod ?? '1').trim();
     if (val === '2') return '쇼크 안주기';
-    return '해당없음';
+    return '쇼크 주기';
   };
 
   const getCoolingType = (item) => {
@@ -2237,13 +2236,11 @@ function AllItemListView({ studyList, onSelectRecipe }) {
       {activeCategory === '쇼크주기' && (() => {
         const doShock = studyList.filter(item => getShockType(item) === '쇼크 주기');
         const noShock = studyList.filter(item => getShockType(item) === '쇼크 안주기');
-        const naShock = studyList.filter(item => getShockType(item) === '해당없음');
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {renderTreeFolderSection('쇼크 주기', doShock.length, doShock, true)}
             {renderTreeFolderSection('쇼크 안주기', noShock.length, noShock, false)}
-            {naShock.length > 0 && renderTreeFolderSection('해당없음', naShock.length, naShock, false)}
           </div>
         );
       })()}

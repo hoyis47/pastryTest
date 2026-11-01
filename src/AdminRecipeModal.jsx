@@ -20,7 +20,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
     isSacrifice: '0',
     sugarMethod: '1',
     eggMethod: '1',
-    shockMethod: '0',
+    shockMethod: '1',
     coolingMethod: '2',
     videos: [{ title: '', url: '' }],
     summary: '',
@@ -58,7 +58,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         isSacrifice: String(targetRecipe.isSacrifice || '0'),
         sugarMethod: String(targetRecipe.sugarMethod ?? '1'),
         eggMethod: String(targetRecipe.eggMethod ?? '1'),
-        shockMethod: String(targetRecipe.shockMethod ?? '0'),
+        shockMethod: String(targetRecipe.shockMethod ?? '1'),
         coolingMethod: String(targetRecipe.coolingMethod ?? '2'),
         videos: initialVideos,
         summary: targetRecipe.rawSummary !== undefined ? targetRecipe.rawSummary : (targetRecipe.summary || ''),
@@ -77,7 +77,7 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
         isSacrifice: '0',
         sugarMethod: '1',
         eggMethod: '1',
-        shockMethod: '0',
+        shockMethod: '1',
         coolingMethod: '2',
         videos: [{ title: '', url: '' }],
         summary: '',
@@ -444,9 +444,9 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, sugarMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">0. 설탕없음</option>
-                <option value="1">1. 한번에 넣기</option>
-                <option value="2">2. 2~3회 넣기</option>
+                <option value="0">설탕없음</option>
+                <option value="1">한번에 넣기</option>
+                <option value="2">2~3회 넣기</option>
               </select>
             </div>
             <div>
@@ -456,10 +456,10 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, eggMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">0. 계란없음</option>
-                <option value="1">1. 한번에 넣기</option>
-                <option value="2">2. 2~3회 넣기</option>
-                <option value="3">3. 5~6회 넣기</option>
+                <option value="0">계란없음</option>
+                <option value="1">한번에 넣기</option>
+                <option value="2">2~3회 넣기</option>
+                <option value="3">5~6회 넣기</option>
               </select>
             </div>
             <div>
@@ -469,9 +469,8 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, shockMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="0">0. 해당없음</option>
-                <option value="1">1. 쇼크 주기</option>
-                <option value="2">2. 쇼크 안주기</option>
+                <option value="1">쇼크 주기</option>
+                <option value="2">쇼크 안주기</option>
               </select>
             </div>
             <div>
@@ -481,8 +480,8 @@ export default function AdminRecipeModal({ isOpen, onClose, targetRecipe, onSave
                 onChange={e => setFormData({ ...formData, coolingMethod: e.target.value })}
                 style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#fff', fontSize: '12px' }}
               >
-                <option value="1">1. 팬에서 식히기</option>
-                <option value="2">2. 바로꺼내기</option>
+                <option value="1">팬에서 식히기</option>
+                <option value="2">바로꺼내기</option>
               </select>
             </div>
           </div>
