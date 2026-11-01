@@ -2038,8 +2038,28 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                             {Array.isArray(time) ? (
                               time.map((tItem, tIdx) => {
                                 const cleanTime = tItem.replace(/\s*~\s*/g, '~');
-                                const isRange = cleanTime.includes('~');
+                                const isCheeseCake = (item.title || '').includes('치즈');
                                 const isTotal = cleanTime.includes('총');
+                                
+                                // 치즈케이크의 '16~20분'인 경우: 숫자는 원래대로, '분'만 작게 분리 렌더링
+                                if (isCheeseCake && cleanTime.includes('16~20')) {
+                                  const numPart = cleanTime.replace('분', '');
+                                  return (
+                                    <span
+                                      key={tIdx}
+                                      style={{
+                                        color: '#1e293b',
+                                        fontWeight: '600',
+                                        lineHeight: '1.25',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
+                                      {numPart}
+                                      <span style={{ fontSize: '9.5px' }}>분</span>
+                                    </span>
+                                  );
+                                }
+
                                 return (
                                   <span
                                     key={tIdx}
@@ -2047,7 +2067,6 @@ function AllItemListView({ studyList, onSelectRecipe }) {
                                       color: isTotal ? '#64748b' : '#1e293b',
                                       fontWeight: isTotal ? 'normal' : '600',
                                       lineHeight: '1.25',
-                                      fontSize: isRange ? '10px' : 'inherit',
                                       whiteSpace: 'nowrap'
                                     }}
                                   >
