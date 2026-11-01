@@ -1753,7 +1753,11 @@ function AllItemListView({ studyList, onSelectRecipe }) {
   const formatGravity = (text) => {
     if (!text || text.trim() === '-' || text.trim() === '') return '-';
     const clean = text.replace(/\s+/g, '');
-    // ± 기호가 없는데 숫자(예: 0.45, .55 등)만 입력된 경우 ±0.05 자동 부착
+    // 범위 형태(두 숫자)이거나 직접 작성된 범위는 그대로 반환
+    if (clean.includes('~') || clean.includes('-')) {
+      return text.trim();
+    }
+    // ± 기호가 없는 순수 단일 숫자인 경우에만 ±0.05 자동 부착
     if (!clean.includes('±') && /^[\d.]+$/.test(clean)) {
       return `${clean}±0.05`;
     }
@@ -2590,15 +2594,22 @@ function App() {
       };
     }
 
-    // 2. "0.55" 처럼 기준 숫자만 입력된 경우 -> ± 0.05 및 실제 계산 범위 자동 생성
-    const singleNum = parseFloat(raw);
-    if (!isNaN(singleNum)) {
-      const minVal = (singleNum - 0.05).toFixed(2);
-      const maxVal = (singleNum + 0.05).toFixed(2);
-      return {
-        coreVal: raw,
-        restText: ` ± 0.05 (${minVal} ~ ${maxVal})`
-      };
+    // 2. 범위 형태("0.65 ~ 0.7", "0.65-0.7" 등 두 숫자가 들어간 경우) -> 계산하지 않고 원본 그대로 유지
+    if (/[~-]/.test(raw) && raw.replace(/[^0-9.]/g, ' ').trim().split(/\s+/).length >= 2) {
+      return { coreVal: raw, restText: '' };
+    }
+
+    // 3. 단일 숫자만 입력된 경우(예: "0.55") -> ± 0.05 및 계산 범위 자동 생성
+    if (/^[\d.]+$/.test(raw)) {
+      const singleNum = parseFloat(raw);
+      if (!isNaN(singleNum)) {
+        const minVal = (singleNum - 0.05).toFixed(2);
+        const maxVal = (singleNum + 0.05).toFixed(2);
+        return {
+          coreVal: raw,
+          restText: ` ± 0.05 (${minVal} ~ ${maxVal})`
+        };
+      }
     }
 
     return { coreVal: raw, restText: '' };
